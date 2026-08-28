@@ -1,0 +1,35 @@
+{
+  "name": "portfolio-apps",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "server": "node server/index.js",
+    "dev": "concurrently \"node server/index.js\" \"vite\"",
+    "build": "vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "prod": "npm run build && concurrently \"node server/index.js\" \"vite preview --host 127.0.0.1 --port 8080 --strictPort\"",
+    "serve": "npm run build && concurrently \"node server/index.js\" \"npx serve -s dist -l 8080\"",
+    "docker:build": "docker build -t portfolio-apps:latest .",
+    "docker:run": "docker run -d -p 8080:80 --name portfolio-app-prod portfolio-apps:latest",
+    "docker:compose": "docker compose up --build -d"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "html2pdf.js": "^0.14.0",
+    "lucide-react": "^1.31.0",
+    "multer": "^2.2.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "concurrently": "^9.1.2",
+    "oxlint": "^1.75.0",
+    "vite": "^8.2.0"
+  }
+}
