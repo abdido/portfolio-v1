@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, ExternalLink, CheckCircle2 } from 'lucide-react';
-import { usePortfolio } from '../context/PortfolioContext';
+import { usePortfolio } from '../context/usePortfolio';
 import { getLocalizedProject } from '../utils/langHelper';
 import { IconGithub } from './SocialIcons';
 

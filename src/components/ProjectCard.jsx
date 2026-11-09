@@ -1,6 +1,6 @@
 import React from 'react';
 import { ExternalLink, ArrowRight } from 'lucide-react';
-import { usePortfolio } from '../context/PortfolioContext';
+import { usePortfolio } from '../context/usePortfolio';
 import { getLocalizedProject } from '../utils/langHelper';
 import { IconGithub } from './SocialIcons';
 
@@ -53,7 +53,7 @@ const ProjectCard = ({ project, layout = 'grid' }) => {
         </div>
 
         <div className="work-card-media">
-          <img src={item.image} alt={item.title} className="work-card-img" />
+          <img src={item.image} alt={item.title} className="work-card-img" loading="lazy" />
         </div>
       </div>
     );
@@ -62,13 +62,13 @@ const ProjectCard = ({ project, layout = 'grid' }) => {
   return (
     <div className="project-card" onClick={() => setSelectedProject(project)}>
       <div className="project-img-wrapper">
-        <img src={item.image} alt={item.title} className="project-img" />
+        <img src={item.image} alt={item.title} className="project-img" loading="lazy" />
         {item.featured && <span className="project-featured-badge">{t('modalBadgeFeatured')}</span>}
       </div>
 
       <div className="project-body">
         <div className="project-category">{item.category}</div>
-        <h3 className="project-title">{item.title}</h3>
+        <h3 className="project-title"><button className="text-button" onClick={e => { e.stopPropagation(); setSelectedProject(project); }}>{item.title}</button></h3>
         <p className="project-summary">{item.summary}</p>
 
         <div className="project-tags">

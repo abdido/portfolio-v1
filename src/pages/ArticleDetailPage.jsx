@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { ArrowLeft, Calendar, Clock, Share2, Tag, BookOpen } from 'lucide-react';
-import { usePortfolio } from '../context/PortfolioContext';
+import { usePortfolio } from '../context/usePortfolio';
 import { getLocalizedArticle } from '../utils/langHelper';
 import BlogCard from '../components/BlogCard';
 
@@ -34,13 +34,11 @@ const ArticleDetailPage = () => {
     .filter(a => a.id !== item.id)
     .slice(0, 2);
 
-  const handleShare = () => {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(window.location.href);
-      showToast(language === 'EN' ? "Article link copied to clipboard!" : "Tautan artikel berhasil disalin ke clipboard!");
-    } else {
-      showToast(language === 'EN' ? "Article shared!" : "Berhasil membagikan artikel!");
-    }
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      showToast(language === 'EN' ? 'Article link copied.' : 'Tautan artikel disalin.');
+    } catch { showToast(language === 'EN' ? 'Unable to copy. Copy the address from your browser.' : 'Tidak dapat menyalin. Salin alamat dari browser.', 'error'); }
   };
 
   return (

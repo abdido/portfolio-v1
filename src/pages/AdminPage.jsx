@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { LayoutDashboard, FolderGit2, FileText, FolderOpen, Award, Mail, Settings, LogOut, ArrowLeft, ShieldCheck, Globe, FileCheck } from 'lucide-react';
-import { usePortfolio } from '../context/PortfolioContext';
+import { usePortfolio } from '../context/usePortfolio';
 import AdminLoginModal from '../cms/AdminLoginModal';
 import DashboardTab from '../cms/DashboardTab';
 import ProjectsTab from '../cms/ProjectsTab';
@@ -13,7 +13,7 @@ import SettingsTab from '../cms/SettingsTab';
 import '../styles/cms.css';
 
 const AdminPage = () => {
-  const { profile, isAdminAuthenticated, setIsAdminAuthenticated, messages, navigateTo } = usePortfolio();
+  const { profile, isAdminAuthenticated, logoutAdmin, messages, navigateTo } = usePortfolio();
   const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'projects', 'articles', 'media', 'cv', 'experiences', 'inbox', 'settings'
 
   const unreadCount = messages.filter(m => !m.read).length;
@@ -81,7 +81,7 @@ const AdminPage = () => {
           </button>
 
           <button
-            onClick={() => setIsAdminAuthenticated(false)}
+            onClick={() => logoutAdmin()}
             className="btn btn-danger btn-sm"
             style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
           >
@@ -173,7 +173,7 @@ const AdminPage = () => {
 
             <button
               className="admin-nav-item"
-              onClick={() => setIsAdminAuthenticated(false)}
+              onClick={() => logoutAdmin()}
               style={{ color: 'var(--danger-color)' }}
             >
               <LogOut size={16} />

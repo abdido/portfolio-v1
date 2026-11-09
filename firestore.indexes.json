@@ -1,0 +1,8 @@
+{
+  "indexes": [],
+  "fieldOverrides": [
+    {"collectionGroup":"portfolio","fieldPath":"json","indexes":[]},
+    {"collectionGroup":"private","fieldPath":"json","indexes":[]},
+    {"collectionGroup":"sessions","fieldPath":"json","indexes":[]}
+  ]
+}

@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { BookOpen, Search, SlidersHorizontal } from 'lucide-react';
-import { usePortfolio } from '../context/PortfolioContext';
+import { getLocalizedArticle } from '../utils/langHelper';
+import { usePortfolio } from '../context/usePortfolio';
 import BlogCard from '../components/BlogCard';
 
 const BlogPage = () => {
-  const { articles, t } = usePortfolio();
+  const { articles, t, language } = usePortfolio();
   const [selectedCategory, setSelectedCategory] = useState('Semua');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -17,13 +18,14 @@ const BlogPage = () => {
   // Filter Articles
   const filteredArticles = useMemo(() => {
     return articles.filter(a => {
+      const localized = getLocalizedArticle(a, language);
       const matchCat = selectedCategory === 'Semua' || a.category === selectedCategory;
-      const matchSearch = a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          a.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      const matchSearch = (localized.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (localized.excerpt || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
                           a.tags?.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
       return matchCat && matchSearch;
     });
-  }, [articles, selectedCategory, searchQuery]);
+  }, [articles, selectedCategory, searchQuery, language]);
 
   return (
     <div className="page-wrapper container">
@@ -76,9 +78,9 @@ const BlogPage = () => {
       ) : (
         <div style={{ textAlign: 'center', padding: '4rem 1rem', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)' }}>
           <SlidersHorizontal size={36} style={{ color: 'var(--text-muted)', marginBottom: '1rem' }} />
-          <h3>Tidak ada artikel ditemukan</h3>
+          <h3>{language === 'EN' ? 'No articles found' : 'Tidak ada artikel ditemukan'}</h3>
           <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem', fontSize: '0.9rem' }}>
-            Coba gunakan kata kunci pencarian yang berbeda.
+            {language === 'EN' ? 'Try another search term.' : 'Coba gunakan kata kunci pencarian yang berbeda.'}
           </p>
         </div>
       )}

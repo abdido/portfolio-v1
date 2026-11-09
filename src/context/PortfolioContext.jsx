@@ -1,579 +1,219 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import {
-  initialProfile,
-  initialCv,
-  initialProjects,
-  initialArticles,
-  initialExperiences,
-  initialSkills,
-  initialMessages,
-  initialSettings
-} from '../data/seedData';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { translations } from '../data/translations';
-
-const PortfolioContext = createContext();
-
-// Pure Clean SEO Slug Generator (Title-only, NO random suffix, NO 'art-' prefix)
-export const createSeoSlug = (title) => {
-  if (!title) return `post-${Date.now()}`;
-  const clean = title
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s-]/g, '')
-    .trim()
-    .replace(/\s+/g, '-');
-  return clean || `post-${Date.now()}`;
+import { api, resolveApiUrl, setCsrfToken } from '../lib/api';
+import { resolveRoute } from '../lib/routing';
+import { PortfolioContext } from './usePortfolio';
+import {
+  initialArticles,
+  initialCv,
+  initialExperiences,
+  initialMessages,
+  initialProfile,
+  initialProjects,
+  initialSettings,
+  initialSkills
+} from '../data/seedData';
+const empty = {profile:{socials:{}},cv:{},cvProfiles:[],activeCvProfileId:'',projects:[],articles:[],experiences:[],skills:[],messages:[],settings:{}};
+const initialData = {
+  profile: initialProfile,
+  cv: initialCv,
+  cvProfiles: [],
+  activeCvProfileId: '',
+  projects: initialProjects,
+  articles: initialArticles,
+  experiences: initialExperiences,
+  skills: initialSkills,
+  messages: initialMessages,
+  settings: initialSettings
 };
-
 export const PortfolioProvider = ({ children }) => {
-  // Main Data States initialized from seed data
-  const [profile, setProfile] = useState(initialProfile);
-  const [cvData, setCvData] = useState(initialCv);
-  const [projects, setProjects] = useState(initialProjects);
-  const [articles, setArticles] = useState(initialArticles);
-  const [experiences, setExperiences] = useState(initialExperiences);
-  const [skills, setSkills] = useState(initialSkills);
-  const [messages, setMessages] = useState(initialMessages);
-  const [settings, setSettings] = useState(initialSettings);
-  const [loading, setLoading] = useState(true);
-
-  // Language State ('ID' | 'EN')
-  const [language, setLanguage] = useState(() => {
-    return localStorage.getItem('portfolio_language') || 'ID';
-  });
-
-  const [activePage, setActivePage] = useState('home');
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('portfolio_theme') || 'dark';
-  });
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
-  const [selectedProject, setSelectedProject] = useState(null);
-  const [selectedArticle, setSelectedArticle] = useState(null);
-
-  // Toast System State
-  const [toast, setToast] = useState(null);
-
-  // Translation Helper
-  const t = (key) => {
-    return translations[language]?.[key] || translations['ID']?.[key] || key;
-  };
-
-  const toggleLanguage = () => {
-    setLanguage(prev => (prev === 'ID' ? 'EN' : 'ID'));
-  };
-
-  useEffect(() => {
-    localStorage.setItem('portfolio_language', language);
-  }, [language]);
-
-  // Fetch Dataset from Express REST API Database Server on mount
-  const fetchDatabaseData = async () => {
+  const [data,setData]=useState(initialData);
+  const [loading,setLoading]=useState(true);
+  const [loadError,setLoadError]=useState('');
+  const [saving,setSaving]=useState(0);
+  const [language,setLanguage]=useState(()=>localStorage.getItem('portfolio_language')==='EN'?'EN':'ID');
+  const [theme,setTheme]=useState(()=>localStorage.getItem('portfolio_theme')==='light'?'light':'dark');
+  const [pathname,setPathname]=useState(window.location.pathname);
+  const [isAdminAuthenticated,setAuthenticated]=useState(false);
+  const [adminSessionChecked,setAdminSessionChecked]=useState(false);
+  const [selectedProject,setSelectedProject]=useState(null);
+  const [toast,setToast]=useState(null);
+  const timer=useRef();
+  const route=resolveRoute(pathname,data.articles);
+  const activePage=route.page;
+  const selectedArticle=route.article||null;
+  const t=useCallback(key=>translations[language]?.[key]||translations.ID?.[key]||key,[language]);
+  const trackEvent=useCallback(event=>{
+    const body=JSON.stringify(event);
+    if(typeof navigator!=='undefined'&&navigator.sendBeacon){
+      const sent=navigator.sendBeacon(resolveApiUrl('/api/analytics/events'),new Blob([body],{type:'application/json'}));
+      if(sent)return;
+    }
+    const target=resolveApiUrl('/api/analytics/events');
+    const crossOrigin=/^https?:\/\//i.test(target)&&new URL(target,window.location.origin).origin!==window.location.origin;
+    void fetch(target,{method:'POST',credentials:crossOrigin?'include':'same-origin',headers:{'Content-Type':'application/json'},body,keepalive:true}).catch(()=>{});
+  },[]);
+  const lastTrackedPath=useRef('');
+  const showToast=useCallback((message,type='success')=>{
+    clearTimeout(timer.current);setToast({message,type});
+    timer.current=setTimeout(()=>setToast(null),5000);
+  },[]);
+  useEffect(()=>()=>clearTimeout(timer.current),[]);
+  const refreshData=useCallback(async()=>{
+    setLoading(true);setLoadError('');
     try {
-      setLoading(true);
-      const res = await fetch('/api/data');
-      if (res.ok) {
-        const data = await res.json();
-        if (data.profile) setProfile(data.profile);
-        if (data.cv) setCvData(data.cv);
-        if (data.projects) setProjects(data.projects);
-        if (data.articles) setArticles(data.articles);
-        if (data.experiences) setExperiences(data.experiences);
-        if (data.skills) setSkills(data.skills);
-        if (data.messages) setMessages(data.messages);
-        if (data.settings) setSettings(data.settings);
-        console.log('✅ Loaded data from Database Backend API');
-      }
-    } catch (e) {
-      console.warn('⚠️ Could not connect to API server, using initial state fallback', e);
-    } finally {
-      setLoading(false);
+      setData({...empty,...await api('/api/data')});
+    } catch(error) {setLoadError(error.message);}
+    finally {setLoading(false);}
+  },[]);
+  useEffect(()=>{refreshData();},[refreshData]);
+  useEffect(()=>{
+    if(activePage!=='admin'){
+      setAdminSessionChecked(false);
+      return;
     }
-  };
-
-  useEffect(() => {
-    fetchDatabaseData();
-  }, []);
-
-  // Helper to parse clean URL path (e.g. /blog/membangun-architecture-micro-frontend-yang-scalable-di-tahun-2026)
-  const parseRouteFromUrl = (articlesList) => {
-    const rawPath = window.location.pathname.replace(/^\//, '').replace(/\/$/, '');
-    const hash = window.location.hash.replace('#', '');
-    const search = window.location.search;
-
-    const currentRoute = rawPath || hash;
-
-    if (currentRoute === 'admin' || search.includes('admin')) {
-      return { page: 'admin' };
-    }
-
-    if (currentRoute.startsWith('blog/')) {
-      const slug = currentRoute.replace('blog/', '');
-      const foundArt = articlesList.find(a => a.id === slug || createSeoSlug(a.title) === slug);
-      if (foundArt) {
-        return { page: 'article-detail', article: foundArt };
-      }
-      return { page: 'blog' };
-    }
-
-    if (currentRoute === 'blog') return { page: 'blog' };
-    if (currentRoute === 'projects') return { page: 'projects' };
-    if (currentRoute === 'about') return { page: 'about' };
-    if (currentRoute === 'contact') return { page: 'contact' };
-    if (currentRoute === 'home') return { page: 'home' };
-
-    return { page: 'home' };
-  };
-
-  // Initial Route Resolution on Mount
-  useEffect(() => {
-    const route = parseRouteFromUrl(articles);
-    setActivePage(route.page);
-    if (route.article) {
-      setSelectedArticle(route.article);
-    }
-  }, [articles]);
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('portfolio_theme', theme);
-  }, [theme]);
-
-  // Handle Browser Back / Forward & Secret Shortcut Ctrl + Shift + A
-  useEffect(() => {
-    const handleUrlChange = () => {
-      const route = parseRouteFromUrl(articles);
-      setActivePage(route.page);
-      if (route.article) {
-        setSelectedArticle(route.article);
-      }
-    };
-
-    const handleKeyDown = (e) => {
-      // Secret Shortcut: Ctrl + Shift + A to open Admin CMS
-      if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
-        e.preventDefault();
-        if (activePage === 'admin') {
-          navigateTo('home');
-        } else {
-          navigateTo('admin');
+    let mounted=true;
+    setAdminSessionChecked(false);
+    const checkSession=async()=>{
+      try{
+        const session=await api('/api/auth/session');
+        if(!mounted)return;
+        setCsrfToken(session.csrfToken);setAuthenticated(session.authenticated);
+        if(session.authenticated){
+          const adminData=await api('/api/admin/data');
+          if(mounted)setData({...empty,...adminData});
         }
+      }catch{
+        if(mounted){setCsrfToken('');setAuthenticated(false);}
+      }finally{
+        if(mounted)setAdminSessionChecked(true);
       }
     };
-
-    window.addEventListener('popstate', handleUrlChange);
-    window.addEventListener('hashchange', handleUrlChange);
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      window.removeEventListener('popstate', handleUrlChange);
-      window.removeEventListener('hashchange', handleUrlChange);
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [articles, activePage]);
-
-  // Toast Helper
-  const showToast = (message, type = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => {
-      setToast(null);
-    }, 4000);
+    void checkSession();
+    return()=>{mounted=false;};
+  },[activePage]);
+  useEffect(()=>{
+    const expire=()=>{setAuthenticated(false);setAdminSessionChecked(true);setCsrfToken('');setData(prev=>({...prev,messages:[]}));};
+    window.addEventListener('portfolio-session-expired',expire);
+    return()=>window.removeEventListener('portfolio-session-expired',expire);
+  },[]);
+  useEffect(()=>{localStorage.setItem('portfolio_language',language);document.documentElement.lang=language==='EN'?'en':'id';},[language]);
+  useEffect(()=>{localStorage.setItem('portfolio_theme',theme);document.documentElement.dataset.theme=theme;},[theme]);
+  const navigateTo=useCallback((page,article)=>{
+    const target=page==='article-detail'&&article?`/blog/${article.slug||article.id}`:page==='home'?'/':`/${page}`;
+    if(window.location.pathname!==target) window.history.pushState({},'',target);
+    setPathname(target);setSelectedProject(null);window.scrollTo({top:0});
+  },[]);
+  useEffect(()=>{
+    const changed=()=>setPathname(window.location.pathname);
+    const shortcut=e=>{if(e.ctrlKey&&e.shiftKey&&e.key.toLowerCase()==='a'){e.preventDefault();navigateTo(window.location.pathname==='/admin'?'home':'admin');}};
+    window.addEventListener('popstate',changed);window.addEventListener('keydown',shortcut);
+    return()=>{window.removeEventListener('popstate',changed);window.removeEventListener('keydown',shortcut);};
+  },[navigateTo]);
+  useEffect(()=>{
+    const labels={home:language==='EN'?'Home':'Beranda',about:t('navAbout'),contact:t('navContact'),projects:t('navProjects'),blog:t('navBlog'),'not-found':'404',admin:'Admin'};
+    const articleTitle=language==='EN'?(selectedArticle?.titleEn||selectedArticle?.title):selectedArticle?.title;
+    document.title=`${articleTitle||labels[activePage]||''} | ${data.profile.name||'Portfolio'}`;
+    const description=document.querySelector('meta[name="description"]');
+    if(description) description.content=selectedArticle?(language==='EN'?(selectedArticle.excerptEn||selectedArticle.excerpt):selectedArticle.excerpt):(language==='EN'?data.profile.bioEn:data.profile.bio)||'';
+    let canonical=document.querySelector('link[rel="canonical"]');
+    if(!canonical){canonical=document.createElement('link');canonical.rel='canonical';document.head.append(canonical);}
+    canonical.href=window.location.origin+pathname;
+  },[pathname,selectedArticle,activePage,data.profile,language,t]);
+  useEffect(()=>{
+    if(!pathname)return;
+    if(activePage==='admin'){lastTrackedPath.current=pathname;return;}
+    if(lastTrackedPath.current===pathname)return;
+    lastTrackedPath.current=pathname;
+    trackEvent({type:'page_view',page:pathname});
+  },[pathname,activePage,trackEvent]);
+  const run=async(work,message)=>{
+    setSaving(n=>n+1);
+    try {const result=await work();if(message) showToast(message);return result??true;}
+    catch(error){showToast(error.message,'error');return null;}
+    finally{setSaving(n=>n-1);}
   };
-
-  const toggleTheme = () => {
-    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+  const saved=language==='EN'?'Changes saved.':'Perubahan berhasil disimpan.';
+  const mutateList=(name,method,id,body)=>run(async()=>{
+    const result=await api(`/api/${name}${id?'/'+encodeURIComponent(id):''}`,{method,body});
+    setData(prev=>{
+      const list=method==='POST'?[result,...prev[name]]:method==='DELETE'?prev[name].filter(i=>i.id!==id):prev[name].map(i=>i.id===id?result:i);
+      const careerUpdate = ['skills','experiences'].includes(name) ? {
+        cv: {...prev.cv,[name]:list},
+        cvProfiles: prev.cvProfiles.map(profile => profile.id === prev.activeCvProfileId ? {...profile,[name]:list} : profile)
+      } : {};
+      return {...prev,[name]:list,...careerUpdate};
+    });return result;
+  },saved);
+  const updateObject=(name,body)=>run(async()=>{
+    const result=await api(`/api/${name}`,{method:'PUT',body});
+    setData(prev=>({...prev,[name]:result[name],...(name==='cv'?{skills:result.cv.skills,experiences:result.cv.experiences,cvProfiles:result.cvProfiles || prev.cvProfiles,activeCvProfileId:result.activeCvProfileId || prev.activeCvProfileId}:{})}));
+    return result;
+  },saved);
+  const updateCvProfile=(id,body)=>run(async()=>{
+    const item=await api(`/api/cv-profiles/${encodeURIComponent(id)}`,{method:'PUT',body});
+    setData(prev=>({...prev,cvProfiles:prev.cvProfiles.map(profile=>profile.id===id?item:profile),...(id===prev.activeCvProfileId?{cv:item,experiences:item.experiences||[],skills:item.skills||[]}:{})}));
+    return item;
+  },saved);
+  const createCvProfile=body=>run(async()=>{
+    const item=await api('/api/cv-profiles',{method:'POST',body});
+    setData(prev=>({...prev,cvProfiles:[...prev.cvProfiles,item]}));
+    return item;
+  },language==='EN'?'CV profile created.':'Profil CV berhasil dibuat.');
+  const activateCvProfile=id=>run(async()=>{
+    const result=await api(`/api/cv-profiles/${encodeURIComponent(id)}/activate`,{method:'POST'});
+    setData(prev=>({...prev,cv:result.cv,cvProfiles:result.cvProfiles,activeCvProfileId:result.activeCvProfileId,experiences:result.cv.experiences||[],skills:result.cv.skills||[]}));
+    return result;
+  },language==='EN'?'Public CV profile changed.':'Profil CV publik berhasil diganti.');
+  const deleteCvProfile=id=>run(async()=>{
+    const result=await api(`/api/cv-profiles/${encodeURIComponent(id)}`,{method:'DELETE'});
+    setData(prev=>({...prev,cv:result.cv,cvProfiles:result.cvProfiles,activeCvProfileId:result.activeCvProfileId,experiences:result.cv.experiences||[],skills:result.cv.skills||[]}));
+    return result;
+  },language==='EN'?'CV profile deleted.':'Profil CV berhasil dihapus.');
+  const loginAdmin=password=>run(async()=>{
+    const result=await api('/api/auth/login',{method:'POST',body:{password}});
+    setCsrfToken(result.csrfToken);setAuthenticated(true);setAdminSessionChecked(true);setData({...empty,...result.data});return true;
+  });
+  const logoutAdmin=()=>run(async()=>{
+    await api('/api/auth/logout',{method:'POST'});setCsrfToken('');setAuthenticated(false);setAdminSessionChecked(true);
+    setData({...empty,...await api('/api/data')});return true;
+  });
+  const updatePassword=(currentPassword,newPassword)=>run(async()=>{
+    const result=await api('/api/auth/password',{method:'PUT',body:{currentPassword,newPassword}});
+    setCsrfToken(result.csrfToken);return true;
+  },saved);
+  const getAnalytics=useCallback(days=>api(`/api/analytics?days=${encodeURIComponent(days||30)}`),[]);
+  const addMessage=body=>run(()=>api('/api/messages',{method:'POST',body}),language==='EN'?'Message sent. Thank you!':'Pesan berhasil dikirim. Terima kasih!');
+  const markMessageAsRead=id=>run(async()=>{
+    const item=await api(`/api/messages/${id}/read`,{method:'PUT'});
+    setData(prev=>({...prev,messages:prev.messages.map(m=>m.id===id?item:m)}));return true;
+  });
+  const exportDataJSON=()=>run(async()=>{
+    const backup=await api('/api/backup');
+    const url=URL.createObjectURL(new Blob([JSON.stringify(backup,null,2)],{type:'application/json'}));
+    const link=document.createElement('a');link.href=url;link.download='portfolio-backup.json';link.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);return true;
+  });
+  const importDataJSON=raw=>run(async()=>{
+    const body=JSON.parse(raw);
+    const result=await api('/api/backup/restore',{method:'POST',body});setData({...empty,...result.data});return true;
+  },saved);
+  const resetToDefaults=async()=>{
+    if(!window.confirm('Kembalikan konten ke data awal? Media dan password tetap tersimpan.')) return null;
+    return run(async()=>{const result=await api('/api/reset',{method:'POST'});setData({...empty,...result.data});return true;},saved);
   };
-
-  const navigateTo = (pageName, paramObj = null) => {
-    let targetPath = '/';
-
-    if (pageName === 'article-detail' && (paramObj || selectedArticle)) {
-      const art = paramObj || selectedArticle;
-      targetPath = `/blog/${art.id}`;
-      setSelectedArticle(art);
-      setActivePage('article-detail');
-    } else if (pageName === 'admin') {
-      targetPath = '/admin';
-      setActivePage('admin');
-    } else if (pageName === 'blog') {
-      targetPath = '/blog';
-      setActivePage('blog');
-    } else if (pageName === 'projects') {
-      targetPath = '/projects';
-      setActivePage('projects');
-    } else if (pageName === 'about') {
-      targetPath = '/about';
-      setActivePage('about');
-    } else if (pageName === 'contact') {
-      targetPath = '/contact';
-      setActivePage('contact');
-    } else {
-      targetPath = '/';
-      setActivePage('home');
-    }
-
-    if (window.location.pathname !== targetPath) {
-      window.history.pushState({ page: pageName }, '', targetPath);
-    }
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const openArticleDetail = (articleOrId) => {
-    const artObj = typeof articleOrId === 'string'
-      ? articles.find(a => a.id === articleOrId)
-      : articleOrId;
-
-    if (artObj) {
-      setSelectedArticle(artObj);
-      navigateTo('article-detail', artObj);
-    }
-  };
-
-  // --- CRUD Project Operations with API Database Sync ---
-  const addProject = async (newProj) => {
-    try {
-      const res = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newProj)
-      });
-      if (res.ok) {
-        const savedProj = await res.json();
-        setProjects(prev => [savedProj, ...prev]);
-        showToast(language === 'EN' ? "New project added successfully!" : "Proyek baru berhasil ditambahkan!");
-        return savedProj;
-      }
-    } catch (e) {
-      const seoSlug = createSeoSlug(newProj.title || 'proyek-baru');
-      const projWithId = { ...newProj, id: seoSlug };
-      setProjects(prev => [projWithId, ...prev]);
-    }
-  };
-
-  const updateProject = async (id, updatedData) => {
-    setProjects(prev => prev.map(p => (p.id === id ? { ...p, ...updatedData } : p)));
-    try {
-      await fetch(`/api/projects/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedData)
-      });
-    } catch (e) {
-      console.error('API updateProject error', e);
-    }
-    showToast(language === 'EN' ? "Project updated successfully!" : "Proyek berhasil diperbarui!");
-  };
-
-  const deleteProject = async (id) => {
-    setProjects(prev => prev.filter(p => p.id !== id));
-    try {
-      await fetch(`/api/projects/${id}`, { method: 'DELETE' });
-    } catch (e) {
-      console.error('API deleteProject error', e);
-    }
-    showToast(language === 'EN' ? "Project deleted!" : "Proyek berhasil dihapus!", "error");
-  };
-
-  const toggleProjectFeatured = (id) => {
-    const target = projects.find(p => p.id === id);
-    if (target) {
-      updateProject(id, { featured: !target.featured });
-    }
-  };
-
-  // --- CRUD Article Operations with API Database Sync ---
-  const addArticle = async (newArt) => {
-    try {
-      const res = await fetch('/api/articles', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newArt)
-      });
-      if (res.ok) {
-        const savedArt = await res.json();
-        setArticles(prev => [savedArt, ...prev]);
-        showToast(language === 'EN' ? "New article published!" : "Artikel baru berhasil diterbitkan!");
-        return savedArt;
-      }
-    } catch (e) {
-      const seoSlug = createSeoSlug(newArt.title || 'artikel-baru');
-      const artWithId = { ...newArt, id: seoSlug };
-      setArticles(prev => [artWithId, ...prev]);
-    }
-  };
-
-  const updateArticle = async (id, updatedData) => {
-    setArticles(prev => prev.map(a => (a.id === id ? { ...a, ...updatedData } : a)));
-    try {
-      await fetch(`/api/articles/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedData)
-      });
-    } catch (e) {
-      console.error('API updateArticle error', e);
-    }
-    showToast(language === 'EN' ? "Article updated!" : "Artikel berhasil diperbarui!");
-  };
-
-  const deleteArticle = async (id) => {
-    setArticles(prev => prev.filter(a => a.id !== id));
-    try {
-      await fetch(`/api/articles/${id}`, { method: 'DELETE' });
-    } catch (e) {
-      console.error('API deleteArticle error', e);
-    }
-    showToast(language === 'EN' ? "Article deleted!" : "Artikel berhasil dihapus!", "error");
-  };
-
-  // --- CRUD Experience & Skill Operations ---
-  const addExperience = async (exp) => {
-    try {
-      const res = await fetch('/api/experiences', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(exp)
-      });
-      if (res.ok) {
-        const item = await res.json();
-        setExperiences(prev => [item, ...prev]);
-      }
-    } catch (e) {
-      const item = { ...exp, id: `exp-${Date.now()}` };
-      setExperiences(prev => [item, ...prev]);
-    }
-    showToast("Pengalaman kerja ditambahkan!");
-  };
-
-  const updateExperience = async (id, updatedData) => {
-    setExperiences(prev => prev.map(e => (e.id === id ? { ...e, ...updatedData } : e)));
-    try {
-      await fetch(`/api/experiences/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedData)
-      });
-    } catch (e) {}
-    showToast("Pengalaman kerja diperbarui!");
-  };
-
-  const deleteExperience = async (id) => {
-    setExperiences(prev => prev.filter(e => e.id !== id));
-    try {
-      await fetch(`/api/experiences/${id}`, { method: 'DELETE' });
-    } catch (e) {}
-    showToast("Pengalaman kerja dihapus!", "error");
-  };
-
-  const addSkill = async (sk) => {
-    try {
-      const res = await fetch('/api/skills', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sk)
-      });
-      if (res.ok) {
-        const item = await res.json();
-        setSkills(prev => [...prev, item]);
-      }
-    } catch (e) {
-      const item = { ...sk, id: `sk-${Date.now()}` };
-      setSkills(prev => [...prev, item]);
-    }
-    showToast("Keahlian ditambahkan!");
-  };
-
-  const updateSkill = async (id, updatedData) => {
-    setSkills(prev => prev.map(s => (s.id === id ? { ...s, ...updatedData } : s)));
-    try {
-      await fetch(`/api/skills/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedData)
-      });
-    } catch (e) {
-      console.error('API updateSkill error', e);
-    }
-    showToast("Keahlian diperbarui!");
-  };
-
-  const deleteSkill = async (id) => {
-    setSkills(prev => prev.filter(s => s.id !== id));
-    try {
-      await fetch(`/api/skills/${id}`, { method: 'DELETE' });
-    } catch (e) {}
-    showToast("Keahlian dihapus!", "error");
-  };
-
-  // --- Message Inbox Operations ---
-  const addMessage = async (msgData) => {
-    try {
-      const res = await fetch('/api/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(msgData)
-      });
-      if (res.ok) {
-        const newMsg = await res.json();
-        setMessages(prev => [newMsg, ...prev]);
-      }
-    } catch (e) {
-      const newMsg = {
-        ...msgData,
-        id: `msg-${Date.now()}`,
-        date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
-        read: false
-      };
-      setMessages(prev => [newMsg, ...prev]);
-    }
-    showToast(language === 'EN' ? "Message sent! Thank you for reaching out." : "Pesan Anda telah terkirim! Terima kasih telah menghubungi.");
-  };
-
-  const markMessageAsRead = async (id) => {
-    setMessages(prev => prev.map(m => (m.id === id ? { ...m, read: true } : m)));
-    try {
-      await fetch(`/api/messages/${id}/read`, { method: 'PUT' });
-    } catch (e) {}
-  };
-
-  const deleteMessage = async (id) => {
-    setMessages(prev => prev.filter(m => m.id !== id));
-    try {
-      await fetch(`/api/messages/${id}`, { method: 'DELETE' });
-    } catch (e) {}
-    showToast("Pesan dihapus dari Inbox", "error");
-  };
-
-  // --- Dedicated CV Operations ---
-  const updateCvData = async (newCv) => {
-    setCvData(newCv);
-    try {
-      await fetch('/api/cv', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newCv)
-      });
-    } catch (e) {
-      console.error('API updateCv error', e);
-    }
-    showToast(language === 'EN' ? "CV data successfully updated!" : "Data CV berhasil disimpan!");
-  };
-
-  // --- Profile & Settings Operations ---
-  const updateProfile = async (newProfile) => {
-    setProfile(newProfile);
-    try {
-      await fetch('/api/profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newProfile)
-      });
-    } catch (e) {}
-    showToast("Profil berhasil diperbarui!");
-  };
-
-  const updateSettings = async (newSettings) => {
-    setSettings(newSettings);
-    try {
-      await fetch('/api/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newSettings)
-      });
-    } catch (e) {}
-    showToast("Pengaturan berhasil disimpan!");
-  };
-
-  // Reset to default seed dataset in API database
-  const resetToDefaults = async () => {
-    if (window.confirm("Apakah Anda yakin ingin mengembalikan seluruh data portofolio & CMS ke data awal?")) {
-      try {
-        const res = await fetch('/api/reset', { method: 'POST' });
-        if (res.ok) {
-          const resData = await res.json();
-          setProfile(resData.data.profile);
-          setCvData(resData.data.cv);
-          setProjects(resData.data.projects);
-          setArticles(resData.data.articles);
-          setExperiences(resData.data.experiences);
-          setSkills(resData.data.skills);
-          setMessages(resData.data.messages);
-          setSettings(resData.data.settings);
-        }
-      } catch (e) {
-        setProfile(initialProfile);
-        setCvData(initialCv);
-        setProjects(initialProjects);
-        setArticles(initialArticles);
-        setExperiences(initialExperiences);
-        setSkills(initialSkills);
-        setMessages(initialMessages);
-        setSettings(initialSettings);
-      }
-      showToast("Seluruh data telah di-reset ke versi awal!", "info");
-    }
-  };
-
-  return (
-    <PortfolioContext.Provider value={{
-      language,
-      setLanguage,
-      toggleLanguage,
-      t,
-      profile,
-      cvData,
-      projects,
-      articles,
-      experiences,
-      skills,
-      messages,
-      settings,
-      loading,
-      activePage,
-      navigateTo,
-      openArticleDetail,
-      theme,
-      toggleTheme,
-      isAdminAuthenticated,
-      setIsAdminAuthenticated,
-      selectedProject,
-      setSelectedProject,
-      selectedArticle,
-      setSelectedArticle,
-      toast,
-      showToast,
-      // CRUD Sync
-      addProject,
-      updateProject,
-      deleteProject,
-      toggleProjectFeatured,
-      addArticle,
-      updateArticle,
-      deleteArticle,
-      addExperience,
-      updateExperience,
-      deleteExperience,
-      addSkill,
-      updateSkill,
-      deleteSkill,
-      addMessage,
-      markMessageAsRead,
-      deleteMessage,
-      updateProfile,
-      updateCvData,
-      updateSettings,
-      resetToDefaults
-    }}>
-      {children}
-    </PortfolioContext.Provider>
-  );
-};
-
-export const usePortfolio = () => {
-  const context = useContext(PortfolioContext);
-  if (!context) {
-    throw new Error('usePortfolio must be used within a PortfolioProvider');
-  }
-  return context;
+  const openArticleDetail=article=>{const item=typeof article==='string'?data.articles.find(a=>a.id===article):article;if(item) navigateTo('article-detail',item);};
+  return <PortfolioContext.Provider value={{...data,cvData:data.cv,loading,loadError,refreshData,saving:!!saving,
+    language,setLanguage,t,toggleLanguage:()=>setLanguage(v=>v==='ID'?'EN':'ID'),theme,toggleTheme:()=>setTheme(v=>v==='dark'?'light':'dark'),
+    activePage,navigateTo,selectedProject,setSelectedProject,selectedArticle,openArticleDetail,
+    isAdminAuthenticated,adminSessionChecked,loginAdmin,logoutAdmin,updatePassword,toast,showToast,trackEvent,getAnalytics,
+    addProject:body=>mutateList('projects','POST',null,body),updateProject:(id,body)=>mutateList('projects','PUT',id,body),deleteProject:id=>mutateList('projects','DELETE',id),
+    toggleProjectFeatured:id=>{const item=data.projects.find(p=>p.id===id);return item&&mutateList('projects','PUT',id,{featured:!item.featured});},
+    addArticle:body=>mutateList('articles','POST',null,body),updateArticle:(id,body)=>mutateList('articles','PUT',id,body),deleteArticle:id=>mutateList('articles','DELETE',id),
+    addExperience:body=>mutateList('experiences','POST',null,body),updateExperience:(id,body)=>mutateList('experiences','PUT',id,body),deleteExperience:id=>mutateList('experiences','DELETE',id),
+    addSkill:body=>mutateList('skills','POST',null,body),updateSkill:(id,body)=>mutateList('skills','PUT',id,body),deleteSkill:id=>mutateList('skills','DELETE',id),
+    updateProfile:body=>updateObject('profile',body),updateSettings:body=>updateObject('settings',body),updateCvData:body=>updateObject('cv',body),
+    updateCvProfile,createCvProfile,activateCvProfile,deleteCvProfile,
+    addMessage,markMessageAsRead,deleteMessage:id=>mutateList('messages','DELETE',id),exportDataJSON,importDataJSON,resetToDefaults,
+  }}>{children}</PortfolioContext.Provider>;
 };

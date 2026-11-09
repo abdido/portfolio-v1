@@ -1,6 +1,6 @@
 import React from 'react';
 import { Sun, Moon } from 'lucide-react';
-import { usePortfolio } from '../context/PortfolioContext';
+import { usePortfolio } from '../context/usePortfolio';
 
 const ThemeToggle = () => {
   const { theme, toggleTheme } = usePortfolio();

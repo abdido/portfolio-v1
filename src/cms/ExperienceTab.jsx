@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Edit2, Trash2, X, Award, Briefcase, Search, Code2, SlidersHorizontal, MapPin, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
-import { usePortfolio } from '../context/PortfolioContext';
+import { Plus, Edit2, Trash2, X, Award, Briefcase, Search, Eye, EyeOff } from 'lucide-react';
+import { usePortfolio } from '../context/usePortfolio';
 
 const ExperienceTab = () => {
   const { experiences, skills, addExperience, updateExperience, deleteExperience, addSkill, updateSkill, deleteSkill } = usePortfolio();
@@ -77,15 +77,15 @@ const ExperienceTab = () => {
     });
   };
 
-  const handleExpSubmit = (e) => {
+  const handleExpSubmit = async (e) => {
     e.preventDefault();
     const skillList = expData.skills.split(',').map(s => s.trim()).filter(Boolean);
     const payload = { ...expData, skills: skillList };
 
     if (editingExp) {
-      updateExperience(editingExp.id, payload);
+      if (!await updateExperience(editingExp.id, payload)) return;
     } else {
-      addExperience(payload);
+      if (!await addExperience(payload)) return;
     }
     setExpModalOpen(false);
   };
@@ -129,7 +129,7 @@ const ExperienceTab = () => {
     }
   };
 
-  const handleSkillSubmit = (e) => {
+  const handleSkillSubmit = async (e) => {
     e.preventDefault();
     const finalCategory = isCustomCategory ? customCategoryInput.trim() : skillData.category;
 
@@ -146,9 +146,9 @@ const ExperienceTab = () => {
     };
 
     if (editingSkill) {
-      updateSkill(editingSkill.id, payload);
+      if (!await updateSkill(editingSkill.id, payload)) return;
     } else {
-      addSkill(payload);
+      if (!await addSkill(payload)) return;
     }
 
     setSkillModalOpen(false);

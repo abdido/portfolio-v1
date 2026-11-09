@@ -1,39 +1,25 @@
 import React, { useState, useRef } from 'react';
-import { Download, Briefcase, Award, MapPin, Mail, Phone, Code2, Eye, Printer, X, ExternalLink, FileText, CheckCircle2, FileDown, Globe } from 'lucide-react';
-import { usePortfolio } from '../context/PortfolioContext';
-import { AtsResumeDocument, downloadAtsPdf } from '../components/AtsResumeTemplate';
+import { Download, Briefcase, Award, MapPin, Mail, Phone, Code2, Eye, Printer, X, FileText, FileDown } from 'lucide-react';
+import { usePortfolio } from '../context/usePortfolio';
+import { AtsResumeDocument } from '../components/AtsResumeTemplate';
 
 const AboutPage = () => {
-  const { profile, cvData, experiences, skills, showToast, t, language } = usePortfolio();
+  const { profile, cvData, experiences, skills, showToast, t, language, trackEvent } = usePortfolio();
   const [showResumeModal, setShowResumeModal] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const resumePrintRef = useRef(null);
-  const hiddenAtsRef = useRef(null);
 
-  // Directly download ATS PDF based on CMS data and active language
   const handleDownloadResume = async () => {
+    if (isGeneratingPdf) return;
+    setIsGeneratingPdf(true);
     try {
-      setIsGeneratingPdf(true);
-      showToast(language === 'EN' ? "Generating English ATS Resume PDF..." : "Menyusun berkas PDF CV (Bahasa Indonesia)...", "info");
-
-      // Give React a tick to render element if needed
-      setTimeout(async () => {
-        const targetElement = hiddenAtsRef.current || resumePrintRef.current;
-        if (targetElement) {
-          await downloadAtsPdf(targetElement, cvData?.name || profile.name || 'Sulistyawan_Abdillah_Rosyid', language);
-          showToast(language === 'EN' ? "English CV PDF successfully downloaded!" : "Berkas PDF CV berhasil diunduh!", "success");
-        } else {
-          setShowResumeModal(true);
-        }
-        setIsGeneratingPdf(false);
-      }, 300);
-    } catch (err) {
-      console.error('Error generating PDF:', err);
-      showToast("Gagal menyusun PDF otomatis. Silakan gunakan tombol Cetak.", "error");
-      setIsGeneratingPdf(false);
-      setShowResumeModal(true);
-    }
+      const { downloadResume } = await import('../lib/resumePdf');
+      await downloadResume(profile, {...cvData, experiences, skills}, language);
+      trackEvent({ type: 'cv_download', profileId: cvData?.id });
+      showToast(language === 'EN' ? 'CV downloaded.' : 'CV berhasil diunduh.');
+    } catch (error) { showToast(error.message || 'Ekspor PDF gagal.', 'error'); }
+    finally { setIsGeneratingPdf(false); }
   };
 
   const handlePrintResume = () => {
@@ -45,18 +31,6 @@ const AboutPage = () => {
 
   return (
     <div className="page-wrapper container">
-      {/* Hidden ATS Template for background high-res PDF generation matching active language */}
-      <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: '794px' }}>
-        <AtsResumeDocument
-          forwardedRef={hiddenAtsRef}
-          profile={profile}
-          cvData={cvData}
-          experiences={cvData?.experiences || experiences}
-          skills={cvData?.skills || skills}
-          language={language}
-        />
-      </div>
-
       {/* Page Header */}
       <div style={{ marginBottom: '3rem' }}>
         <div className="section-tag">
@@ -69,7 +43,7 @@ const AboutPage = () => {
       </div>
 
       {/* Bio Grid */}
-      <div className="contact-grid" style={{ marginBottom: '4rem' }}>
+      <div className="contact-grid">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <img
             src={profile.avatar}
@@ -97,6 +71,7 @@ const AboutPage = () => {
             </div>
 
             {/* CV Actions Group */}
+            {profile.resumeUrl && <a className="btn btn-secondary" href={profile.resumeUrl} target="_blank" rel="noreferrer" onClick={() => trackEvent({ type: 'cv_download', profileId: cvData?.id })}>{language === 'EN' ? 'Open uploaded PDF' : 'Buka PDF unggahan'}</a>}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginTop: '1.5rem' }}>
               <button
                 onClick={handleDownloadResume}
@@ -148,6 +123,61 @@ const AboutPage = () => {
         </div>
       </div>
 
+      {/* Full Skill Matrix Breakdown */}
+      <section className="skills-section-wrapper">
+        <div style={{ marginBottom: '2.5rem' }}>
+          <div className="section-tag">
+            <Code2 size={14} /> {t('skillsTitle')}
+          </div>
+          <h2 className="section-title">{language === 'EN' ? 'Skill Matrix & Technical Proficiency' : 'Kualifikasi & Tingkat Kemahiran'}</h2>
+          <p className="section-subtitle">
+            {language === 'EN' ? 'Proficiency levels across networking, hardware, cloud systems, and enterprise toolsets.' : 'Tingkat penguasaan teknologi, bahasa pemrograman, framework, dan perangkat desain yang digunakan dalam proyek.'}
+          </p>
+        </div>
+
+        <div className="skills-category-group">
+          {categories.map(cat => {
+            const catSkills = skills.filter(s => s.category === cat);
+            if (catSkills.length === 0) return null;
+
+            return (
+              <div key={cat} className="skill-category-card">
+                <div className="skill-category-header">
+                  <h3 className="skill-category-title">
+                    <Code2 size={18} className="text-accent" />
+                    <span>{cat}</span>
+                  </h3>
+                  <span className="badge" style={{ fontSize: '0.75rem' }}>
+                    {catSkills.length} {language === 'EN' ? 'Skills' : 'Keahlian'}
+                  </span>
+                </div>
+
+                <div className="skills-list">
+                  {catSkills.map(sk => {
+                    const skillName = language === 'EN' ? (sk.nameEn || sk.name) : sk.name;
+
+                    return (
+                      <div key={sk.id} className="skill-item">
+                        <div className="skill-item-header">
+                          <span className="skill-item-name">{skillName}</span>
+                          <span className="skill-item-level">{sk.level}%</span>
+                        </div>
+                        <div className="skill-progress-track">
+                          <div
+                            className="skill-progress-bar"
+                            style={{ width: `${sk.level}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
       {/* Experience Timeline */}
       <section className="section-block">
         <div className="section-tag">
@@ -159,7 +189,7 @@ const AboutPage = () => {
         </p>
 
         <div className="timeline">
-          {((cvData?.experiences && cvData.experiences.length > 0 ? cvData.experiences : experiences))
+          {experiences
             .filter(exp => exp.isActive !== false)
             .map(exp => {
               const expRole = language === 'EN' ? (exp.roleEn || exp.role) : exp.role;
@@ -194,67 +224,6 @@ const AboutPage = () => {
         </div>
       </section>
 
-      {/* Full Skill Matrix Breakdown */}
-      <section className="skills-section-wrapper">
-        <div style={{ marginBottom: '2.5rem' }}>
-          <div className="section-tag">
-            <Code2 size={14} /> {t('skillsTitle')}
-          </div>
-          <h2 className="section-title">{language === 'EN' ? 'Skill Matrix & Technical Proficiency' : 'Kualifikasi & Tingkat Kemahiran'}</h2>
-          <p className="section-subtitle">
-            {language === 'EN' ? 'Proficiency levels across networking, hardware, cloud systems, and enterprise toolsets.' : 'Tingkat penguasaan teknologi, bahasa pemrograman, framework, dan perangkat desain yang digunakan dalam proyek.'}
-          </p>
-        </div>
-
-        <div className="skills-category-group">
-          {categories.map(cat => {
-            const catSkills = (cvData?.skills && cvData.skills.length > 0 ? cvData.skills : skills).filter(s => s.category === cat);
-            if (catSkills.length === 0) return null;
-
-            return (
-              <div key={cat} className="skill-category-card">
-                <div className="skill-category-header">
-                  <h3 className="skill-category-title">
-                    <Code2 size={18} className="text-accent" />
-                    <span>{cat}</span>
-                  </h3>
-                  <span className="badge" style={{ fontSize: '0.75rem' }}>
-                    {catSkills.length} {language === 'EN' ? 'Skills' : 'Keahlian'}
-                  </span>
-                </div>
-
-                <div className="skills-list">
-                  {catSkills.map(sk => {
-                    const skillName = language === 'EN' ? (sk.nameEn || sk.name) : sk.name;
-                    const skillDesc = language === 'EN' ? (sk.descriptionEn || sk.description) : sk.description;
-
-                    return (
-                      <div key={sk.id} className="skill-item">
-                        <div className="skill-item-header">
-                          <span className="skill-item-name">{skillName}</span>
-                          <span className="skill-item-level">{sk.level}%</span>
-                        </div>
-                        <div className="skill-progress-track">
-                          <div
-                            className="skill-progress-bar"
-                            style={{ width: `${sk.level}%` }}
-                          ></div>
-                        </div>
-                        {skillDesc && (
-                          <small style={{ color: 'var(--text-muted)', fontSize: '0.78rem', lineHeight: 1.4, marginTop: '0.2rem' }}>
-                            {skillDesc}
-                          </small>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
       {/* ATS DIGITAL RESUME PREVIEW & PRINT MODAL */}
       {showResumeModal && (
         <div className="modal-overlay" onClick={() => setShowResumeModal(false)}>
@@ -267,7 +236,7 @@ const AboutPage = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <FileText size={20} className="text-accent" />
                 <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>
-                  {language === 'EN' ? 'Digital ATS Resume Preview (Official Format)' : 'Pratinjau CV Digital (Format ATS Resmi)'}
+                  {language === 'EN' ? 'Digital ATS Resume Preview (Selectable Text)' : 'Pratinjau CV Digital (Teks yang Dapat Dibaca)'}
                 </h3>
                 <span className="badge" style={{ fontSize: '0.75rem', background: 'var(--accent-light)', color: 'var(--accent-color)' }}>
                   {language === 'EN' ? '🇬🇧 English' : '🇮🇩 Indonesia'}
@@ -276,7 +245,7 @@ const AboutPage = () => {
 
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 <button
-                  onClick={() => downloadAtsPdf(resumePrintRef.current, cvData?.name || profile.name, language)}
+                  onClick={handleDownloadResume} disabled={isGeneratingPdf}
                   className="btn btn-primary btn-sm"
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
                 >

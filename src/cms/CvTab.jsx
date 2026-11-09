@@ -1,28 +1,14 @@
-import React, { useState, useRef } from 'react';
-import {
-  FileText,
-  Save,
-  Download,
-  Eye,
-  Plus,
-  Trash2,
-  CheckCircle2,
-  Globe,
-  Briefcase,
-  GraduationCap,
-  Award,
-  Layers,
-  Sparkles,
-  Printer
-} from 'lucide-react';
-import { usePortfolio } from '../context/PortfolioContext';
-import { AtsResumeDocument, downloadAtsPdf } from '../components/AtsResumeTemplate';
+import React, { useState, useRef, useEffect } from 'react';
+import { FileText, Save, Download, Eye, Plus, Trash2, Globe, Briefcase, GraduationCap, Award, Sparkles, X, Check } from 'lucide-react';
+import { usePortfolio } from '../context/usePortfolio';
+import { AtsResumeDocument } from '../components/AtsResumeTemplate';
 
 const CvTab = () => {
-  const { cvData, updateCvData, profile, showToast } = usePortfolio();
+  const { cvData, cvProfiles, activeCvProfileId, updateCvData, updateCvProfile, createCvProfile, activateCvProfile, deleteCvProfile, profile, showToast } = usePortfolio();
 
   // Local Form State clone of cvData
   const [formCv, setFormCv] = useState(() => ({
+    profileName: cvData?.profileName || 'IT Support',
     name: cvData?.name || profile?.name || 'SULISTYAWAN ABDILLAH ROSYID',
     roleId: cvData?.roleId || 'IT SUPPORT',
     roleEn: cvData?.roleEn || 'IT SUPPORT SPECIALIST',
@@ -49,32 +35,88 @@ const CvTab = () => {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const previewRef = useRef(null);
+  const [selectedProfileId, setSelectedProfileId] = useState(activeCvProfileId || '');
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [newProfileName, setNewProfileName] = useState('Web Developer');
+  const [profileModalError, setProfileModalError] = useState('');
+  const profileNameInputRef = useRef(null);
+
+  useEffect(() => {
+    if (!cvProfiles?.length) return;
+    const preferred = selectedProfileId && cvProfiles.some(item => item.id === selectedProfileId)
+      ? selectedProfileId
+      : activeCvProfileId || cvProfiles[0].id;
+    if (preferred !== selectedProfileId) setSelectedProfileId(preferred);
+    const selected = cvProfiles.find(item => item.id === preferred);
+    if (selected && preferred !== selectedProfileId) setFormCv({ ...selected });
+  }, [cvProfiles, activeCvProfileId, selectedProfileId]);
+
+  const handleSelectProfile = (id) => {
+    const selected = cvProfiles.find(item => item.id === id);
+    if (!selected) return;
+    setSelectedProfileId(id);
+    setFormCv({ ...selected });
+  };
+
+  useEffect(() => {
+    if (!isProfileModalOpen) return undefined;
+    const focusTimer = window.requestAnimationFrame(() => profileNameInputRef.current?.focus());
+    return () => window.cancelAnimationFrame(focusTimer);
+  }, [isProfileModalOpen]);
+
+  const openProfileModal = () => {
+    setNewProfileName('Web Developer');
+    setProfileModalError('');
+    setIsProfileModalOpen(true);
+  };
+
+  const closeProfileModal = () => {
+    setIsProfileModalOpen(false);
+    setProfileModalError('');
+  };
+
+  const handleCreateProfile = async (event) => {
+    event?.preventDefault();
+    const name = newProfileName.trim();
+    if (!name) {
+      setProfileModalError('Nama profil wajib diisi.');
+      profileNameInputRef.current?.focus();
+      return;
+    }
+    const copy = { ...formCv, id: undefined, profileName: name };
+    delete copy.id;
+    const created = await createCvProfile(copy);
+    if (created) {
+      setSelectedProfileId(created.id);
+      setFormCv({ ...created });
+      closeProfileModal();
+    }
+  };
+
+  const handleDeleteProfile = async () => {
+    if (cvProfiles.length <= 1) { showToast('Minimal satu profil CV harus tersimpan.', 'error'); return; }
+    const selected = cvProfiles.find(item => item.id === selectedProfileId);
+    if (!selected || !window.confirm(`Hapus profil CV "${selected.profileName || selected.roleId}"?`)) return;
+    await deleteCvProfile(selected.id);
+  };
 
   // Save changes to database API
   const handleSaveAll = (e) => {
     if (e) e.preventDefault();
-    updateCvData(formCv);
+    if (selectedProfileId === activeCvProfileId) updateCvData(formCv);
+    else updateCvProfile(selectedProfileId, formCv);
   };
 
-  // Download PDF
-  const handleDownload = async (langToDownload) => {
+  // Export from current form data; rendering timing does not affect the PDF language.
+  const handleDownload = async lang => {
+    if (isGenerating) return;
+    setIsGenerating(true); setPreviewLang(lang);
     try {
-      setIsGenerating(true);
-      showToast(`Menyusun berkas PDF CV (${langToDownload === 'EN' ? 'English' : 'Indonesia'})...`, 'info');
-      setPreviewLang(langToDownload);
-
-      setTimeout(async () => {
-        if (previewRef.current) {
-          await downloadAtsPdf(previewRef.current, formCv.name, langToDownload);
-          showToast(`CV PDF (${langToDownload}) berhasil diunduh!`, 'success');
-        }
-        setIsGenerating(false);
-      }, 350);
-    } catch (err) {
-      console.error('PDF export error:', err);
-      showToast('Gagal mengunduh PDF', 'error');
-      setIsGenerating(false);
-    }
+      const { downloadResume } = await import('../lib/resumePdf');
+      await downloadResume(profile, formCv, lang);
+      showToast('CV PDF berhasil diunduh.');
+    } catch (error) { showToast(error.message || 'Ekspor PDF gagal.', 'error'); }
+    finally { setIsGenerating(false); }
   };
 
   // Add / Remove Education
@@ -154,6 +196,27 @@ const CvTab = () => {
 
   return (
     <div style={{ width: '100%' }}>
+      <div className="contact-card cv-profile-manager" style={{ marginBottom: '1.25rem', padding: '1.25rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+          <div>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '.25rem' }}>Profil CV tersimpan</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '.85rem' }}>Simpan CV terpisah untuk IT Support, Web Developer, dan posisi lainnya.</p>
+          </div>
+          <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <label className="form-label" htmlFor="cv-profile-select" style={{ margin: 0 }}>Profil</label>
+            <select id="cv-profile-select" className="form-control" value={selectedProfileId} onChange={e => handleSelectProfile(e.target.value)} style={{ minWidth: '190px' }}>
+              {cvProfiles.map(item => <option key={item.id} value={item.id}>{item.profileName || item.roleId || 'CV'}</option>)}
+            </select>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={openProfileModal}><Plus size={14} /> Profil baru</button>
+            <button type="button" className="btn btn-danger btn-sm" onClick={handleDeleteProfile} disabled={cvProfiles.length <= 1}><Trash2 size={14} /> Hapus</button>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem', flexWrap: 'wrap', marginTop: '1rem' }}>
+          <label className="form-label" htmlFor="cv-profile-name" style={{ margin: 0 }}>Nama profil</label>
+          <input id="cv-profile-name" className="form-control" value={formCv.profileName || ''} onChange={e => setFormCv({ ...formCv, profileName: e.target.value })} placeholder="Contoh: Web Developer" maxLength={120} style={{ maxWidth: '280px' }} />
+          {selectedProfileId === activeCvProfileId ? <span className="badge" style={{ color: 'var(--success-color)' }}>Aktif di website publik</span> : <button type="button" className="btn btn-outline btn-sm" onClick={() => activateCvProfile(selectedProfileId)}>Jadikan CV publik</button>}
+        </div>
+      </div>
       {/* Top Header & Actions */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem', width: '100%' }}>
         <div>
@@ -712,6 +775,53 @@ const CvTab = () => {
           </div>
         </div>
       </div>
+
+      {isProfileModalOpen && (
+        <div className="modal-overlay cv-profile-modal-overlay" onClick={event => event.target === event.currentTarget && closeProfileModal()}>
+          <div className="modal-content cv-profile-modal" onClick={event => event.stopPropagation()}>
+            <div className="cv-profile-modal-glow" aria-hidden="true" />
+            <div className="modal-header cv-profile-modal-header">
+              <div className="cv-profile-modal-heading">
+                <div className="cv-profile-modal-icon" aria-hidden="true"><Briefcase size={21} /></div>
+                <div>
+                  <span className="cv-profile-modal-kicker">PROFIL CV BARU</span>
+                  <h3>Buat profil yang berbeda</h3>
+                  <p>Salin CV saat ini lalu sesuaikan untuk posisi yang kamu incar.</p>
+                </div>
+              </div>
+              <button type="button" className="modal-close cv-profile-modal-close" onClick={closeProfileModal} aria-label="Tutup modal">
+                <X size={19} />
+              </button>
+            </div>
+            <form className="modal-body cv-profile-modal-body" onSubmit={handleCreateProfile}>
+              <div className="cv-profile-modal-field">
+                <label className="form-label" htmlFor="new-cv-profile-name">Nama profil</label>
+                <div className="cv-profile-modal-input-wrap">
+                  <Sparkles size={16} aria-hidden="true" />
+                  <input
+                    ref={profileNameInputRef}
+                    id="new-cv-profile-name"
+                    className="form-control cv-profile-modal-input"
+                    value={newProfileName}
+                    onChange={event => { setNewProfileName(event.target.value); setProfileModalError(''); }}
+                    placeholder="Contoh: Web Developer"
+                    maxLength={120}
+                    autoComplete="off"
+                    aria-invalid={Boolean(profileModalError)}
+                    aria-describedby="new-cv-profile-hint"
+                  />
+                </div>
+                <p id="new-cv-profile-hint" className="cv-profile-modal-hint">Contoh: IT Support · Web Developer · Frontend Engineer</p>
+                {profileModalError && <p className="cv-profile-modal-error" role="alert">{profileModalError}</p>}
+              </div>
+              <div className="cv-profile-modal-footer">
+                <button type="button" className="btn btn-ghost" onClick={closeProfileModal}>Batal</button>
+                <button type="submit" className="btn btn-primary"><Check size={16} /> Simpan profil</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

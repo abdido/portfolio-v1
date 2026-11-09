@@ -1,10 +1,10 @@
 import React from 'react';
-import { ArrowRight, Code2, Sparkles, Layout, Smartphone, Layers, CheckCircle2 } from 'lucide-react';
-import { usePortfolio } from '../context/PortfolioContext';
+import { ArrowRight, Code2, Sparkles, Layout, Smartphone, Layers } from 'lucide-react';
+import { usePortfolio } from '../context/usePortfolio';
 import ProjectCard from '../components/ProjectCard';
 
 const HomePage = () => {
-  const { profile, projects, navigateTo, t } = usePortfolio();
+  const { profile, projects, navigateTo, t, language } = usePortfolio();
 
   const featuredProjects = projects.filter(p => p.featured).slice(0, 3);
 
@@ -22,7 +22,7 @@ const HomePage = () => {
         </h1>
 
         <p className="hero-subtitle">
-          {profile.bio || t('heroSubtitle')}
+          {(language === 'EN' ? profile.bioEn || profile.bio : profile.bio) || t('heroSubtitle')}
         </p>
 
         <div className="hero-cta-group">
@@ -40,19 +40,19 @@ const HomePage = () => {
       <section className="stats-section">
         <div className="stats-grid-clean">
           <div className="stat-item">
-            <span className="stat-num">{profile.stats?.yearsExperience || 5}+</span>
+            <span className="stat-num">{profile.stats?.yearsExperience ?? 0}+</span>
             <span className="stat-lbl">{t('statYears')}</span>
           </div>
           <div className="stat-item">
-            <span className="stat-num">{profile.stats?.completedProjects || 40}+</span>
+            <span className="stat-num">{profile.stats?.completedProjects ?? 0}+</span>
             <span className="stat-lbl">{t('statProjects')}</span>
           </div>
           <div className="stat-item">
-            <span className="stat-num">{profile.stats?.satisfiedClients || 25}+</span>
+            <span className="stat-num">{profile.stats?.satisfiedClients ?? 0}+</span>
             <span className="stat-lbl">{t('statClients')}</span>
           </div>
           <div className="stat-item">
-            <span className="stat-num">{profile.stats?.codeCommits || 3000}+</span>
+            <span className="stat-num">{profile.stats?.codeCommits ?? 0}+</span>
             <span className="stat-lbl">{t('statCommits')}</span>
           </div>
         </div>

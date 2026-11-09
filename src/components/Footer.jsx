@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowUp } from 'lucide-react';
-import { usePortfolio } from '../context/PortfolioContext';
+import { usePortfolio } from '../context/usePortfolio';
 import { IconGithub, IconLinkedin, IconTwitter, IconInstagram } from './SocialIcons';
 
 const Footer = () => {

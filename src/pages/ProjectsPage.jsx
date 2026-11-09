@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { FolderGit2, Search, SlidersHorizontal, LayoutGrid, Rows } from 'lucide-react';
-import { usePortfolio } from '../context/PortfolioContext';
+import { getLocalizedProject } from '../utils/langHelper';
+import { usePortfolio } from '../context/usePortfolio';
 import ProjectCard from '../components/ProjectCard';
 
 const ProjectsPage = () => {
-  const { projects, t } = usePortfolio();
+  const { projects, t, language } = usePortfolio();
   const [selectedCategory, setSelectedCategory] = useState('Semua');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest'); // 'newest' | 'featured'
@@ -19,18 +20,19 @@ const ProjectsPage = () => {
   // Filter & Sort Projects
   const filteredProjects = useMemo(() => {
     return projects.filter(p => {
+      const localized = getLocalizedProject(p, language);
       const matchCat = selectedCategory === 'Semua' || p.category === selectedCategory;
-      const matchSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          p.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          p.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchSearch = (localized.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (localized.summary || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          p.tags?.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
       return matchCat && matchSearch;
     }).sort((a, b) => {
       if (sortBy === 'featured') {
         return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
       }
-      return 0;
+      return String(b.createdAt || b.year || '').localeCompare(String(a.createdAt || a.year || ''));
     });
-  }, [projects, selectedCategory, searchQuery, sortBy]);
+  }, [projects, selectedCategory, searchQuery, sortBy, language]);
 
   return (
     <div className="page-wrapper container">

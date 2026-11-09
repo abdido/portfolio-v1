@@ -1,6 +1,6 @@
 import React from 'react';
 import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
-import { usePortfolio } from '../context/PortfolioContext';
+import { usePortfolio } from '../context/usePortfolio';
 
 const NotificationToast = () => {
   const { toast } = usePortfolio();
@@ -8,7 +8,7 @@ const NotificationToast = () => {
   if (!toast) return null;
 
   return (
-    <div className="toast-container">
+    <div className="toast-container" role={toast.type === 'error' ? 'alert' : 'status'} aria-live={toast.type === 'error' ? 'assertive' : 'polite'}>
       <div className={`toast ${toast.type}`}>
         {toast.type === 'error' ? (
           <AlertCircle size={20} className="text-danger" />

@@ -10,3 +10,10 @@ yarn-error.log*
 .vscode
 .idea
 README.md
+.data
+server/db
+uploads
+tests
+tmp
+output
+PROJECT_REVIEW.md

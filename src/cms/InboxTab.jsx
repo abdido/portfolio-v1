@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Mail, CheckCircle, Trash2, Eye, X, CornerUpLeft } from 'lucide-react';
-import { usePortfolio } from '../context/PortfolioContext';
+import { Trash2, Eye, X, CornerUpLeft } from 'lucide-react';
+import { usePortfolio } from '../context/usePortfolio';
 
 const InboxTab = () => {
   const { messages, markMessageAsRead, deleteMessage, showToast } = usePortfolio();

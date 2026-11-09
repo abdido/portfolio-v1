@@ -1,9 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { Save, Key, Download, Upload, RotateCcw, User, ShieldCheck, FileText, CheckCircle2, GraduationCap, Eye } from 'lucide-react';
-import { usePortfolio } from '../context/PortfolioContext';
+import { Save, Key, Download, Upload, RotateCcw, User, ShieldCheck, FileText, CheckCircle2, GraduationCap, MapPin } from 'lucide-react';
+import { usePortfolio } from '../context/usePortfolio';
 
 const SettingsTab = () => {
-  const { profile, updateProfile, settings, updateSettings, resetToDefaults, exportDataJSON, importDataJSON, showToast } = usePortfolio();
+  const { profile, updateProfile, updatePassword, resetToDefaults, exportDataJSON, importDataJSON, showToast } = usePortfolio();
 
   const [profileForm, setProfileForm] = useState({ ...profile });
   const [educationForm, setEducationForm] = useState(
@@ -13,7 +13,8 @@ const SettingsTab = () => {
     }
   );
   const [socialsForm, setSocialsForm] = useState({ ...profile.socials });
-  const [passcodeForm, setPasscodeForm] = useState(settings.adminPasscode || 'admin123');
+  const [passcodeForm, setPasscodeForm] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
   const [uploadingCV, setUploadingCV] = useState(false);
 
   const cvInputRef = useRef(null);
@@ -27,26 +28,21 @@ const SettingsTab = () => {
     });
   };
 
-  const handleSavePasscode = (e) => {
+  const handleSavePasscode = async (e) => {
     e.preventDefault();
-    if (!passcodeForm) {
-      alert("PIN Passcode tidak boleh kosong!");
-      return;
-    }
-    updateSettings({
-      ...settings,
-      adminPasscode: passcodeForm
-    });
-    showToast("PIN Passcode CMS berhasil diubah!");
+    if (await updatePassword(currentPassword, passcodeForm)) { setCurrentPassword(''); setPasscodeForm(''); }
   };
 
   const handleImportFile = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (event) => {
-      importDataJSON(event.target.result);
+    reader.onload = async (event) => {
+      if (window.confirm('Ganti konten dengan cadangan ini? Media dan password tidak berubah.')) await importDataJSON(event.target.result);
+      e.target.value = '';
+      if (cvInputRef.current) cvInputRef.current.value = '';
     };
+    if (file.size > 5 * 1024 * 1024) { showToast('Cadangan maksimal 5 MB.', 'error'); return; }
     reader.readAsText(file);
   };
 
@@ -60,25 +56,25 @@ const SettingsTab = () => {
 
     try {
       setUploadingCV(true);
-      const res = await fetch('/api/media/upload', {
+      const result = await api('/api/media/upload', {
         method: 'POST',
         body: formData
       });
 
-      if (res.ok) {
-        const data = await res.json();
+      if (result) {
+        const data = result;
         const uploadedFile = data.media?.[0];
         if (uploadedFile) {
           const newResumeUrl = uploadedFile.url;
           setProfileForm(prev => ({ ...prev, resumeUrl: newResumeUrl }));
-          updateProfile({
+          const saved = await updateProfile({
             ...profile,
             ...profileForm,
             education: [educationForm],
             resumeUrl: newResumeUrl,
             socials: socialsForm
           });
-          showToast("Berkas CV / Resume PDF berhasil diunggah dan disimpan!");
+          if (saved) showToast("Berkas CV / Resume PDF berhasil diunggah dan disimpan!");
         }
       } else {
         showToast("Gagal mengunggah berkas CV.", "error");
@@ -200,6 +196,52 @@ const SettingsTab = () => {
                 onChange={(e) => setProfileForm({ ...profileForm, avatar: e.target.value })}
               />
             </div>
+          </div>
+
+          <div style={{ background: 'var(--bg-secondary)', padding: '1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', margin: '1.5rem 0' }}>
+            <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <MapPin size={18} className="text-accent" /> Peta Halaman Kontak
+            </h4>
+
+            <div className="form-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={profileForm.mapEnabled !== false}
+                  onChange={(e) => setProfileForm({ ...profileForm, mapEnabled: e.target.checked })}
+                />
+                <span>Tampilkan peta pada halaman kontak</span>
+              </label>
+            </div>
+
+            <div className="form-grid-2">
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Alamat atau koordinat peta</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Balikpapan, Indonesia atau -1.2379, 116.8529"
+                  value={profileForm.mapLocation || ''}
+                  onChange={(e) => setProfileForm({ ...profileForm, mapLocation: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Zoom peta (1–20)</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  min="1"
+                  max="20"
+                  value={profileForm.mapZoom ?? 13}
+                  onChange={(e) => setProfileForm({ ...profileForm, mapZoom: Number(e.target.value) })}
+                />
+              </div>
+            </div>
+
+            <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '0.75rem' }}>
+              Gunakan alamat yang spesifik atau koordinat latitude dan longitude agar penanda peta lebih akurat.
+            </small>
           </div>
 
           {/* Education Box */}
@@ -331,12 +373,13 @@ const SettingsTab = () => {
         </h3>
 
         <form onSubmit={handleSavePasscode} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <div className="form-group"><label className="form-label" htmlFor="current-password">Password saat ini</label><input id="current-password" type="password" autoComplete="current-password" required className="form-control" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} /></div>
           <div className="form-group" style={{ flexGrow: 1, marginBottom: 0 }}>
-            <label className="form-label">PIN Passcode Baru</label>
+            <label className="form-label">Password (minimal 12 karakter) Baru</label>
             <input
               type="text"
               className="form-control"
-              value={passcodeForm}
+              autoComplete="new-password" minLength={12} value={passcodeForm}
               onChange={(e) => setPasscodeForm(e.target.value)}
               required
             />
@@ -355,7 +398,7 @@ const SettingsTab = () => {
         </h3>
 
         <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-          Anda dapat mengekspor seluruh konten portofolio & CMS ke file JSON, mengimpor kembali file cadangan, atau mengembalikan seluruh data ke kondisi awal (*seed default*).
+          Ekspor/impor JSON mencakup konten dan inbox. File media serta password tidak termasuk; cadangkan folder uploads dan .data secara terpisah. Pemulihan konten memakai penyimpanan media yang sama.
         </p>
 
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>

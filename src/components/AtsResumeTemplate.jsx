@@ -1,8 +1,7 @@
 import React from 'react';
-import html2pdf from 'html2pdf.js';
 
 /**
- * Clean, Standard ATS-Compliant Resume Template & PDF Generator
+ * Text-based resume preview with bilingual content
  * Matches standard ATS formatting with full Dual-Language (ID / EN) support.
  */
 export const AtsResumeDocument = ({
@@ -33,30 +32,16 @@ export const AtsResumeDocument = ({
     : (cvData?.summaryId || profile?.bio);
 
   // Education list with language adaptation
-  const rawEducation = cvData?.education || profile?.education || [];
-  const educationList = rawEducation.length > 0
-    ? rawEducation.map(edu => ({
-        institution: isEn ? (edu.institutionEn || edu.institution) : edu.institution,
-        degree: isEn ? (edu.degreeEn || edu.degree) : edu.degree
-      }))
-    : [
-        {
-          institution: isEn ? "INSTITUTE OF TECHNOLOGY KALIMANTAN" : "INSTITUT TEKNOLOGI KALIMANTAN",
-          degree: isEn ? "Bachelor of Computer Science – GPA 3.43" : "S1 Informatika – IPK 3.43"
-        }
-      ];
+  const rawEducation = cvData?.education ?? profile?.education ?? [];
+  const educationList = rawEducation.map(edu => ({institution: isEn ? (edu.institutionEn || edu.institution) : edu.institution, degree: isEn ? (edu.degreeEn || edu.degree) : edu.degree}));
 
   // Experiences list (from cvData or fallback)
-  const rawExperiences = (cvData?.experiences && cvData.experiences.length > 0)
-    ? cvData.experiences
-    : experiences;
+  const rawExperiences = cvData?.experiences ?? experiences;
 
   const activeExperiences = (rawExperiences || []).filter(exp => exp.isActive !== false);
 
   // Skills list (from cvData or fallback)
-  const rawSkills = (cvData?.skills && cvData.skills.length > 0)
-    ? cvData.skills
-    : skills;
+  const rawSkills = cvData?.skills ?? skills;
 
   // Helper to parse description lines/bullet points
   const renderDescription = (desc) => {
@@ -319,37 +304,6 @@ export const AtsResumeDocument = ({
       )}
     </div>
   );
-};
-
-/**
- * Utility to download the ATS Resume as high-resolution PDF with Language tag
- */
-export const downloadAtsPdf = (element, profileName = 'Sulistyawan_Abdillah_Rosyid', language = 'ID') => {
-  if (!element) return;
-
-  const cleanName = (profileName || 'Resume').toUpperCase().replace(/[^A-Z0-9]/g, '_');
-  const langSuffix = language === 'EN' ? '_EN' : '_ID';
-  const filename = `${cleanName}_CV${langSuffix}.pdf`;
-
-  const opt = {
-    margin: [12, 12, 12, 12], // 12mm margins
-    filename: filename,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      letterRendering: true
-    },
-    jsPDF: {
-      unit: 'mm',
-      format: 'a4',
-      orientation: 'portrait'
-    },
-    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-  };
-
-  return html2pdf().set(opt).from(element).save();
 };
 
 export default AtsResumeDocument;

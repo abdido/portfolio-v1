@@ -5,10 +5,13 @@ export const initialProfile = {
   bio: "Seorang profesional IT & Developer yang berdedikasi dalam membangun infrastruktur teknologi yang andal, aman, dan berkinerja tinggi. Berpengalaman dalam operasional sistem enterprise, pemeliharaan perangkat keras & jaringan, serta pengembangan aplikasi modern.",
   bioEn: "A dedicated IT professional & Developer focused on building reliable, secure, and high-performance technology solutions. Experienced in enterprise systems operations, hardware & network infrastructure, and modern software development.",
   location: "Balikpapan, Indonesia",
+  mapEnabled: true,
+  mapLocation: "QXR9+PR Manggar Baru, Balikpapan City, East Kalimantan, Indonesia",
+  mapZoom: 13,
   email: "sulistyawanar@gmail.com",
   phone: "+62 8131 3165 8141",
   availableForHire: true,
-  avatar: "http://localhost:5173/uploads/images/logo-ahe-dan-beyza-education-1787467436118-3535.png",
+  avatar: "/uploads/images/logo-ahe-dan-beyza-education-1787467436118-3535.png",
   resumeUrl: "/uploads/documents/it-support-sulistyawan-abdillah-rosyid-1787468086293-6946.pdf",
   socials: {
     github: "https://github.com/abdido",
@@ -244,27 +247,153 @@ export const initialArticles = [
     excerptEn: "Learn how to decompose monolithic web applications into independent, autonomous modules that can be deployed frictionlessly by distributed engineering teams.",
     content: `Micro-frontend telah menjadi standar bagi organisasi teknologi skala besar. Dengan membagi Monolith antarmuka menjadi aplikasi-aplikasi kecil yang independen, tim pengembangan dapat bergerak lebih cepat.\n\n### Mengapa Memilih Micro-frontend?\n\n1. **Independent Deployment**: Setiap tim dapat melakukan rilis fitur tanpa menunggu build utama.\n2. **Tech Stack Flexibility**: Memungkinkan migrasi bertahap antar versi React atau teknologi pendukung.\n3. **Fault Isolation**: Kesalahan pada satu modul tidak langsung menumbangkan seluruh antarmuka aplikasi.\n\n### Praktik Terbaik Implementasi\n\nSelalu pastikan Anda memiliki **Shared Design System** agar elemen UI seperti Button, Inputs, dan Color Palette tetap konsisten di seluruh tim.`,
     contentEn: `Micro-frontend architecture has become the standard for large-scale engineering organizations. By decomposing frontend monoliths into smaller, autonomous applications, engineering teams can iterate and ship features faster.\n\n### Why Choose Micro-frontends?\n\n1. **Independent Deployment**: Every team can release features independently without waiting for main application builds.\n2. **Tech Stack Flexibility**: Enables gradual framework upgrades and modular tech adoption.\n3. **Fault Isolation**: Errors in one module won't crash the entire application UI.\n\n### Best Practices for Implementation\n\nAlways establish a **Shared Design System** to guarantee consistent UI tokens, buttons, inputs, and color palettes across all feature modules.`
+  },
+  {
+    id: "panduan-diagnosa-jaringan-kantor-secara-sistematis",
+    title: "Panduan Diagnosa Jaringan Kantor Secara Sistematis",
+    titleEn: "A Systematic Guide to Office Network Troubleshooting",
+    category: "IT Support",
+    categoryEn: "IT Support",
+    tags: ["Networking", "Troubleshooting", "LAN", "Wi-Fi"],
+    readTime: "5 min",
+    date: "12 September 2026",
+    excerpt: "Langkah praktis menemukan sumber gangguan internet kantor dari perangkat pengguna hingga router dan layanan ISP.",
+    excerptEn: "A practical workflow for locating office connectivity issues from user devices to routers and ISP services.",
+    content: `Gangguan jaringan sering terlihat sama dari sisi pengguna: internet lambat atau tidak dapat diakses. Agar penanganan tidak berdasarkan tebakan, pemeriksaan perlu dilakukan berurutan dari perangkat terdekat.
+
+### 1. Tentukan Ruang Lingkup Gangguan
+
+Periksa apakah masalah hanya terjadi pada satu perangkat, satu ruangan, satu VLAN, atau seluruh kantor. Informasi ini langsung mempersempit kemungkinan penyebab.
+
+### 2. Periksa Lapisan Fisik
+
+Pastikan kabel, konektor, indikator port switch, dan adaptor jaringan bekerja normal. Untuk Wi-Fi, periksa kekuatan sinyal dan kepadatan kanal.
+
+### 3. Uji Konfigurasi dan Jalur Koneksi
+
+Gunakan ipconfig, ping gateway, ping alamat publik, lalu uji DNS. Urutan ini membantu membedakan masalah IP, routing, internet, dan resolusi nama.
+
+### 4. Catat Hasil Perbaikan
+
+Dokumentasikan penyebab, tindakan, dan waktu pemulihan. Catatan sederhana ini mempercepat penanganan jika gangguan yang sama kembali terjadi.`,
+    contentEn: `Network incidents often look identical to users: the internet is slow or unavailable. A reliable diagnosis should move in order from the closest device toward external services.
+
+### 1. Define the Scope
+
+Check whether the issue affects one device, one room, one VLAN, or the entire office. This immediately narrows the likely causes.
+
+### 2. Inspect the Physical Layer
+
+Verify cables, connectors, switch port indicators, and network adapters. For Wi-Fi, check signal strength and channel congestion.
+
+### 3. Test Configuration and Connectivity
+
+Run ipconfig, ping the gateway, ping a public IP address, and then test DNS. This sequence separates IP, routing, internet, and name-resolution problems.
+
+### 4. Record the Resolution
+
+Document the cause, action, and recovery time. A simple incident record makes repeated issues much faster to resolve.`
+  },
+  {
+    id: "deploy-react-cloudflare-workers-firebase-tanpa-server",
+    title: "Deploy React ke Cloudflare Workers dan Firebase Tanpa Server",
+    titleEn: "Deploying React with Cloudflare Workers and Firebase",
+    category: "Cloud & Deployment",
+    categoryEn: "Cloud & Deployment",
+    tags: ["React", "Cloudflare Workers", "Firebase", "Deployment"],
+    readTime: "7 min",
+    date: "8 September 2026",
+    excerpt: "Menyusun arsitektur portofolio cepat dengan frontend React, API Cloudflare Worker, dan penyimpanan data Firebase.",
+    excerptEn: "Building a fast portfolio architecture with a React frontend, Cloudflare Worker API, and Firebase data storage.",
+    content: `Aplikasi portofolio tidak selalu membutuhkan server virtual yang aktif sepanjang hari. React, Cloudflare Workers, dan Firebase dapat digabungkan menjadi arsitektur yang ringan serta mudah dirawat.
+
+### Pembagian Tanggung Jawab
+
+React menangani antarmuka, Cloudflare Worker menjalankan API di edge, dan Firestore menyimpan konten yang dikelola melalui dashboard admin.
+
+### Proses Deployment
+
+Build produksi React ditempatkan sebagai static assets. Permintaan dengan awalan /api diteruskan ke Worker, sedangkan rute halaman menggunakan fallback SPA agar tautan langsung tetap berfungsi.
+
+### Keamanan Dasar
+
+Kredensial Firebase disimpan sebagai secret Worker. Endpoint admin dilindungi sesi, CSRF, validasi input, dan pembatasan request.
+
+### Hasil Akhir
+
+Website dapat memakai domain sendiri, HTTPS otomatis, dan distribusi global tanpa mengelola sistem operasi server.`,
+    contentEn: `A portfolio application does not always need a virtual server running all day. React, Cloudflare Workers, and Firebase can form a lightweight architecture that is easy to maintain.
+
+### Responsibilities
+
+React handles the interface, Cloudflare Worker runs the edge API, and Firestore stores content managed through the admin dashboard.
+
+### Deployment Flow
+
+The React production build is uploaded as static assets. Requests beginning with /api go to the Worker, while page routes use an SPA fallback so direct links continue to work.
+
+### Basic Security
+
+Firebase credentials are stored as a Worker secret. Admin endpoints use sessions, CSRF protection, input validation, and request limits.
+
+### Result
+
+The website can use a custom domain, automatic HTTPS, and global distribution without maintaining a server operating system.`
+  },
+  {
+    id: "checklist-perawatan-pos-dan-printer-thermal",
+    title: "Checklist Perawatan POS dan Printer Thermal untuk Operasional Harian",
+    titleEn: "Daily Maintenance Checklist for POS Systems and Thermal Printers",
+    category: "IT Operations",
+    categoryEn: "IT Operations",
+    tags: ["POS", "Hardware", "Maintenance", "Operations"],
+    readTime: "4 min",
+    date: "3 September 2026",
+    excerpt: "Checklist sederhana untuk mengurangi gangguan transaksi akibat terminal POS, printer thermal, atau koneksi yang bermasalah.",
+    excerptEn: "A simple checklist to reduce transaction interruptions caused by POS terminals, thermal printers, or connectivity issues.",
+    content: `Perangkat POS bekerja pada jam operasional yang panjang dan langsung memengaruhi transaksi pelanggan. Perawatan singkat yang dilakukan konsisten dapat mencegah banyak gangguan.
+
+### Sebelum Operasional
+
+Nyalakan terminal dan printer lebih awal, lakukan transaksi uji, periksa koneksi jaringan, serta pastikan stok kertas thermal tersedia.
+
+### Pemeriksaan Printer
+
+Bersihkan kepala printer dengan bahan yang sesuai, periksa roller, dan pastikan potongan kertas tidak tertinggal di jalur cetak. Hindari benda tajam yang dapat merusak permukaan thermal head.
+
+### Pemeriksaan Terminal POS
+
+Pastikan aplikasi dapat masuk, waktu sistem benar, penyimpanan tidak penuh, dan perangkat tambahan seperti scanner serta cash drawer terdeteksi.
+
+### Setelah Operasional
+
+Tutup aplikasi dengan benar, sinkronkan transaksi, catat error yang muncul, dan jadwalkan tindak lanjut sebelum perangkat kembali digunakan.`,
+    contentEn: `POS equipment operates for long hours and directly affects customer transactions. A short and consistent maintenance routine prevents many common interruptions.
+
+### Before Opening
+
+Start terminals and printers early, run a test transaction, verify network connectivity, and confirm that thermal paper is available.
+
+### Printer Inspection
+
+Clean the print head with suitable materials, inspect the roller, and remove paper fragments from the feed path. Avoid sharp objects that can damage the thermal head.
+
+### POS Terminal Inspection
+
+Confirm that the application can sign in, system time is correct, storage is available, and peripherals such as scanners and cash drawers are detected.
+
+### After Closing
+
+Exit the application correctly, synchronize transactions, record any errors, and schedule follow-up work before the device returns to service.`
   }
 ];
 
 export const initialExperiences = initialCv.experiences;
 export const initialSkills = initialCv.skills;
 
-export const initialMessages = [
-  {
-    id: "msg-1",
-    name: "Budi Santoso",
-    email: "budi.santoso@company.co.id",
-    subject: "Penawaran Kerjasama Proyek IT Support",
-    service: "IT Support",
-    message: "Halo Sulistyawan, kami dari PT Maju Bersama tertarik dengan pengalaman Anda di bidang IT Helpdesk dan Jaringan. Apakah ada waktu untuk berdiskusi via Zoom minggu ini?",
-    date: "12 Agustus 2026",
-    read: true
-  }
-];
+export const initialMessages = [];
 
 export const initialSettings = {
-  adminPasscode: "abdi123",
   siteTitle: "Sulistyawan Abdillah Rosyid | Portfolio & Professional Showcase",
   footerText: "© 2026 Sulistyawan Abdillah Rosyid. All rights reserved. Crafted with passion & React."
 };

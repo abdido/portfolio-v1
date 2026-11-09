@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Upload,
   Image,
@@ -19,7 +19,8 @@ import {
   LayoutGrid,
   List
 } from 'lucide-react';
-import { usePortfolio } from '../context/PortfolioContext';
+import { api } from '../lib/api';
+import { usePortfolio } from '../context/usePortfolio';
 
 const MediaTab = () => {
   const { showToast } = usePortfolio();
@@ -37,12 +38,11 @@ const MediaTab = () => {
   const fileInputRef = useRef(null);
 
   // Fetch Media Files from Backend API
-  const fetchMedia = async () => {
+  const fetchMedia = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/media');
-      if (res.ok) {
-        const data = await res.json();
+      const data = await api('/api/media');
+      if (data) {
         setMediaList(data);
       }
     } catch (error) {
@@ -51,11 +51,11 @@ const MediaTab = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
 
   useEffect(() => {
     fetchMedia();
-  }, []);
+  }, [fetchMedia]);
 
   // Handle File Uploads
   const handleUploadFiles = async (files) => {
@@ -68,13 +68,12 @@ const MediaTab = () => {
 
     try {
       setUploading(true);
-      const res = await fetch('/api/media/upload', {
+      const data = await api('/api/media/upload', {
         method: 'POST',
         body: formData
       });
 
-      if (res.ok) {
-        const data = await res.json();
+      if (data) {
         showToast(`${data.count || files.length} file berhasil diunggah!`);
         fetchMedia();
       } else {
@@ -82,7 +81,7 @@ const MediaTab = () => {
       }
     } catch (error) {
       console.error('Upload error:', error);
-      showToast('Terjadi kesalahan saat mengunggah.', 'error');
+      showToast(error.message, 'error');
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -119,8 +118,8 @@ const MediaTab = () => {
     }
 
     try {
-      const res = await fetch(`/api/media/${item.id}`, { method: 'DELETE' });
-      if (res.ok) {
+      const result = await api(`/api/media/${item.id}`, { method: 'DELETE' });
+      if (result) {
         setMediaList(prev => prev.filter(m => m.id !== item.id));
         showToast('File media berhasil dihapus!', 'info');
         if (previewItem?.id === item.id) setPreviewItem(null);
@@ -129,14 +128,14 @@ const MediaTab = () => {
       }
     } catch (error) {
       console.error('Delete error:', error);
-      showToast('Terjadi kesalahan saat menghapus file.', 'error');
+      showToast(error.message, 'error');
     }
   };
 
   // Copy Full URL to Clipboard
-  const handleCopyUrl = (item) => {
-    const fullUrl = window.location.origin + item.url;
-    navigator.clipboard.writeText(fullUrl);
+  const handleCopyUrl = async (item) => {
+    const fullUrl = new URL(item.url, window.location.origin).href;
+    try { await navigator.clipboard.writeText(fullUrl); } catch { showToast('Tidak dapat menyalin URL.', 'error'); return; }
     setCopiedId(item.id);
     showToast('Tautan URL disalin ke clipboard!');
     setTimeout(() => setCopiedId(null), 2500);
@@ -650,7 +649,7 @@ const MediaTab = () => {
                     <input
                       type="text"
                       readOnly
-                      value={window.location.origin + previewItem.url}
+                      value={new URL(previewItem.url, window.location.origin).href}
                       className="form-control"
                       style={{ fontSize: '0.8rem', background: 'var(--bg-secondary)' }}
                     />

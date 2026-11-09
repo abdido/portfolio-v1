@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, Edit2, Trash2, Star, Search, X, FolderGit2, Globe } from 'lucide-react';
-import { usePortfolio } from '../context/PortfolioContext';
+import { usePortfolio } from '../context/usePortfolio';
 
 const ProjectsTab = () => {
   const { projects, addProject, updateProject, deleteProject, toggleProjectFeatured } = usePortfolio();
@@ -94,7 +94,7 @@ const ProjectsTab = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const finalCategory = isCustomCategory ? customCategoryInput.trim() : formData.category;
@@ -115,9 +115,9 @@ const ProjectsTab = () => {
     };
 
     if (editingProject) {
-      updateProject(editingProject.id, payload);
+      if (!await updateProject(editingProject.id, payload)) return;
     } else {
-      addProject(payload);
+      if (!await addProject(payload)) return;
     }
 
     setModalOpen(false);

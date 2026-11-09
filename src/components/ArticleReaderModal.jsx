@@ -1,6 +1,6 @@
 import React from 'react';
-import { X, Calendar, Clock, BookOpen } from 'lucide-react';
-import { usePortfolio } from '../context/PortfolioContext';
+import { X, Calendar, Clock } from 'lucide-react';
+import { usePortfolio } from '../context/usePortfolio';
 
 const ArticleReaderModal = () => {
   const { selectedArticle, setSelectedArticle } = usePortfolio();

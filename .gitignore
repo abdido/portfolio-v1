@@ -22,3 +22,20 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Private runtime data and local credentials
+.data/
+server/db/
+uploads/
+!public/uploads/
+!public/uploads/**
+.env
+.env.*
+!.env.example
+tmp/
+output/
+.secrets/
+.dev.vars
+.dev.vars.*
+.wrangler/
+.firebase/

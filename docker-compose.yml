@@ -1,12 +1,13 @@
 services:
   portfolio:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
-    container_name: portfolio-app-prod
+    build: .
     ports:
-      - "8080:80"
-    restart: always
+      - "127.0.0.1:8080:8080"
+    restart: unless-stopped
     environment:
-      - NODE_ENV=production
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:8080}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
+    volumes:
+      - ./.data:/app/.data
+      - ./uploads:/app/uploads

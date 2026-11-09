@@ -21,7 +21,7 @@ export const getLocalizedProject = (project, language) => {
       summary: project.summaryEn || project.summary,
       description: project.descriptionEn || project.description,
       category: project.categoryEn || project.category,
-      features: project.featuresEn || project.features
+      features: project.featuresEn?.length ? project.featuresEn : project.features
     };
   }
   return project;

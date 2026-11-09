@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, Edit2, Trash2, Search, X, FileText, Globe } from 'lucide-react';
-import { usePortfolio } from '../context/PortfolioContext';
+import { usePortfolio } from '../context/usePortfolio';
 
 const BlogTab = () => {
   const { articles, addArticle, updateArticle, deleteArticle } = usePortfolio();
@@ -79,7 +79,7 @@ const BlogTab = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const finalCategory = isCustomCategory ? customCategoryInput.trim() : formData.category;
@@ -100,9 +100,9 @@ const BlogTab = () => {
     };
 
     if (editingArticle) {
-      updateArticle(editingArticle.id, payload);
+      if (!await updateArticle(editingArticle.id, payload)) return;
     } else {
-      addArticle(payload);
+      if (!await addArticle(payload)) return;
     }
 
     setModalOpen(false);

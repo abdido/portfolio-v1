@@ -1,6 +1,6 @@
 import React from 'react';
 import { Calendar, Clock, ArrowRight } from 'lucide-react';
-import { usePortfolio } from '../context/PortfolioContext';
+import { usePortfolio } from '../context/usePortfolio';
 import { getLocalizedArticle } from '../utils/langHelper';
 
 const BlogCard = ({ article }) => {
@@ -25,7 +25,7 @@ const BlogCard = ({ article }) => {
         </div>
       </div>
 
-      <h3 className="blog-title">{item.title}</h3>
+      <h3 className="blog-title"><a href={`/blog/${article.slug || article.id}`} onClick={e => { e.preventDefault(); e.stopPropagation(); openArticleDetail(article); }}>{item.title}</a></h3>
       <p className="blog-excerpt">{item.excerpt}</p>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '1rem', borderTop: '1px solid var(--border-color)', marginTop: 'auto' }}>

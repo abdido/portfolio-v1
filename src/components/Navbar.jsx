@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Menu, X, ArrowRight } from 'lucide-react';
-import { usePortfolio } from '../context/PortfolioContext';
+import { usePortfolio } from '../context/usePortfolio';
 import ThemeToggle from './ThemeToggle';
 
 const Navbar = () => {
@@ -67,7 +67,7 @@ const Navbar = () => {
 
           <button
             onClick={() => handleNavClick('contact')}
-            className="btn btn-primary btn-sm"
+            className="btn btn-primary btn-sm nav-contact-cta"
             style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
           >
             <span>{t('navContactBtn')}</span>
@@ -78,7 +78,7 @@ const Navbar = () => {
           <button
             className="mobile-toggle"
             onClick={() => setMobileOpen(!mobileOpen)}
-            aria-label="Toggle mobile menu"
+            aria-label="Toggle mobile menu" aria-expanded={mobileOpen} aria-controls="mobile-navigation"
           >
             {mobileOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -86,7 +86,7 @@ const Navbar = () => {
       </div>
 
       {/* Mobile Drawer */}
-      <div className={`mobile-drawer ${mobileOpen ? 'open' : ''}`}>
+      <div id="mobile-navigation" hidden={!mobileOpen} inert={!mobileOpen} className={`mobile-drawer ${mobileOpen ? 'open' : ''}`}>
         <ul className="mobile-nav-list">
           {navItems.map(item => (
             <li key={item.id}>
