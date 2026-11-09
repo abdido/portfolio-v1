@@ -22,7 +22,7 @@ if(process.env.NODE_ENV==='production' || process.env.SERVE_STATIC==='true') {
     try {
       const data=db.readDB();
       const match=req.path.match(/^\/blog\/([^/]+)$/);
-      const article=match && data.articles.find(a=>(a.slug||a.id)===match[1]||a.id===match[1]);
+      const article=match && data.articles.find(a=>((a.slug||a.id)===match[1]||a.id===match[1]) && !a.hidden);
       const known=['/','/home','/projects','/blog','/about','/contact','/admin'].includes(req.path)||article;
       const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
       let html=fs.readFileSync(path.join(dist,'index.html'),'utf8');

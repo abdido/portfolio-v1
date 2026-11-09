@@ -91,9 +91,9 @@ const analyticsSummary = (db, requestedDays = 30) => {
   return { range: { days, from: daily[0].date, to: daily.at(-1).date }, totals: { pageViews: pageViewsTotal, cvDownloads, contacts }, daily, topPages, topCvProfiles };
 };
 const publicData = db => ({ profile: db.profile, cv: {...db.cv,experiences:db.cv?.experiences || db.experiences,skills:db.cv?.skills || db.skills},
-  projects: db.projects, articles: db.articles, experiences: db.experiences.filter(e=>e.isActive!==false), skills: db.skills,
+  projects: db.projects, articles: (db.articles || []).filter(a => !a.hidden), experiences: db.experiences.filter(e=>e.isActive!==false), skills: db.skills,
   settings: {siteTitle: db.settings.siteTitle,footerText:db.settings.footerText} });
-const adminData = db => ({...publicData(db),experiences:db.experiences,messages:db.messages,
+const adminData = db => ({...publicData(db), articles: db.articles || [], experiences:db.experiences, messages:db.messages,
   cvProfiles: db.cvProfiles, activeCvProfileId: db.activeCvProfileId});
 app.get('/api/health', wrap(async (_req,res) => { await readDB(); res.json({status:'ok'}); }));
 app.get('/api/data', wrap(async (_req,res) => res.json(publicData(await readDB()))));

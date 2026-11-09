@@ -34,7 +34,7 @@ export const schemas = {
     client: optional, year: optional, featured: z.boolean().default(false) }),
   articles: z.object({ title: text.min(1), titleEn: optional, category: text.min(1), categoryEn: optional,
     excerpt: long.default(''), excerptEn: long.default(''), content: long.default(''), contentEn: long.default(''),
-    tags: list, readTime: optional, date: optional }),
+    tags: list, readTime: optional, date: optional, hidden: z.boolean().default(false) }),
   experiences: experience, skills: skill,
   messages: z.object({ name: text.min(1), email: z.string().trim().max(254).email(), subject: optional,
     service: optional, message: z.string().trim().min(1).max(10000), website: z.string().max(0).optional() }),

@@ -5,7 +5,7 @@ export function resolveRoute(pathname, articles) {
   if(['about','contact','admin','projects','blog'].includes(route)) return {page:route};
   if(route.startsWith('blog/')) {
     const slug=route.slice(5);
-    const article=articles.find(a=>(a.slug||a.id)===slug||a.id===slug);
+    const article=articles.find(a=>((a.slug||a.id)===slug||a.id===slug) && !a.hidden);
     if(article) return {page:'article-detail',article};
   }
   return {page:'not-found'};

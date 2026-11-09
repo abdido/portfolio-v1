@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Edit2, Trash2, Search, X, FileText, Globe } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, X, FileText, Globe, Eye, EyeOff } from 'lucide-react';
 import { usePortfolio } from '../context/usePortfolio';
 
 const BlogTab = () => {
-  const { articles, addArticle, updateArticle, deleteArticle } = usePortfolio();
+  const { articles, addArticle, updateArticle, deleteArticle, toggleArticleHidden } = usePortfolio();
 
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -28,7 +28,8 @@ const BlogTab = () => {
     content: '',
     contentEn: '',
     tags: '',
-    readTime: '5 min'
+    readTime: '5 min',
+    hidden: false
   });
 
   const handleOpenAdd = () => {
@@ -44,7 +45,8 @@ const BlogTab = () => {
       content: '',
       contentEn: '',
       tags: 'React, Web, Tutorial',
-      readTime: '5 min'
+      readTime: '5 min',
+      hidden: false
     });
     setModalOpen(true);
   };
@@ -63,7 +65,8 @@ const BlogTab = () => {
       content: art.content || '',
       contentEn: art.contentEn || '',
       tags: art.tags ? art.tags.join(', ') : '',
-      readTime: art.readTime || '5 min'
+      readTime: art.readTime || '5 min',
+      hidden: Boolean(art.hidden)
     });
     setModalOpen(true);
   };
@@ -150,6 +153,7 @@ const BlogTab = () => {
             <tr>
               <th>Judul Artikel</th>
               <th>Kategori</th>
+              <th>Status Publikasi</th>
               <th>Status Dual-Lang</th>
               <th>Tanggal</th>
               <th>Aksi</th>
@@ -158,14 +162,54 @@ const BlogTab = () => {
           <tbody>
             {filtered.length > 0 ? (
               filtered.map(art => (
-                <tr key={art.id}>
+                <tr key={art.id} style={{ opacity: art.hidden ? 0.78 : 1, transition: 'opacity 0.2s ease' }}>
                   <td>
-                    <strong>{art.title}</strong>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <strong>{art.title}</strong>
+                      {art.hidden && (
+                        <span
+                          className="badge"
+                          style={{
+                            background: 'rgba(245, 158, 11, 0.15)',
+                            color: 'var(--warning-color)',
+                            border: '1px solid rgba(245, 158, 11, 0.3)',
+                            fontSize: '0.7rem',
+                            padding: '0.1rem 0.45rem',
+                            gap: '3px'
+                          }}
+                        >
+                          <EyeOff size={11} /> Takedown
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
                       EN: {art.titleEn || '(Menggunakan fallback ID)'}
                     </div>
                   </td>
                   <td><span className="badge">{art.category}</span></td>
+                  <td>
+                    <button
+                      type="button"
+                      onClick={() => toggleArticleHidden(art.id)}
+                      className="badge"
+                      style={{
+                        cursor: 'pointer',
+                        background: art.hidden ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                        color: art.hidden ? 'var(--warning-color)' : 'var(--success-color)',
+                        border: art.hidden ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(16, 185, 129, 0.3)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        padding: '0.25rem 0.65rem',
+                        fontWeight: 600,
+                        transition: 'all 0.2s ease'
+                      }}
+                      title={art.hidden ? 'Artikel sedang disembunyikan. Klik untuk publikasikan kembali.' : 'Artikel aktif tayang. Klik untuk sembunyikan (takedown).'}
+                    >
+                      {art.hidden ? <EyeOff size={12} /> : <Eye size={12} />}
+                      <span>{art.hidden ? 'Disembunyikan' : 'Tayang'}</span>
+                    </button>
+                  </td>
                   <td>
                     <span className="badge" style={{ background: art.titleEn ? 'rgba(16, 185, 129, 0.15)' : 'var(--bg-secondary)', color: art.titleEn ? 'var(--success-color)' : 'var(--text-muted)', border: 'none' }}>
                       <Globe size={12} style={{ marginRight: '4px' }} />
@@ -175,6 +219,14 @@ const BlogTab = () => {
                   <td style={{ fontSize: '0.85rem' }}>{art.date}</td>
                   <td>
                     <div className="table-actions">
+                      <button
+                        type="button"
+                        onClick={() => toggleArticleHidden(art.id)}
+                        className={`btn-icon ${art.hidden ? 'btn-warning' : 'btn-secondary'}`}
+                        title={art.hidden ? 'Tampilkan Kembali Artikel' : 'Sembunyikan / Takedown Artikel'}
+                      >
+                        {art.hidden ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
                       <button onClick={() => handleOpenEdit(art)} className="btn-icon btn-secondary" title="Edit Artikel">
                         <Edit2 size={16} />
                       </button>
@@ -187,7 +239,7 @@ const BlogTab = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                   Tidak ada artikel ditemukan.
                 </td>
               </tr>
@@ -328,6 +380,29 @@ const BlogTab = () => {
                   value={formData.tags}
                   onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
                 />
+              </div>
+
+              {/* Takedown / Hide Article Toggle */}
+              <div className="form-group" style={{ marginTop: '1rem', padding: '0.9rem 1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', userSelect: 'none' }}>
+                  <input
+                    type="checkbox"
+                    checked={formData.hidden}
+                    onChange={(e) => setFormData({ ...formData, hidden: e.target.checked })}
+                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--warning-color)' }}
+                  />
+                  <div>
+                    <strong style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: formData.hidden ? 'var(--warning-color)' : 'var(--text-primary)' }}>
+                      {formData.hidden ? <EyeOff size={15} /> : <Eye size={15} />}
+                      Sembunyikan artikel ini (Takedown / Draft)
+                    </strong>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      {formData.hidden
+                        ? 'Artikel ini tidak akan tampil di website publik dan hanya dapat diakses oleh admin di CMS.'
+                        : 'Artikel aktif tayang dan dapat dibaca oleh seluruh pengunjung website publik.'}
+                    </div>
+                  </div>
+                </label>
               </div>
 
               <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>

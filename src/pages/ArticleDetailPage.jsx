@@ -13,14 +13,14 @@ const ArticleDetailPage = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [selectedArticle]);
 
-  // Fallback if no article selected
-  if (!item) {
+  // Fallback if no article selected or article is hidden
+  if (!item || selectedArticle?.hidden) {
     return (
       <div className="page-wrapper container" style={{ textAlign: 'center', padding: '4rem 1rem' }}>
         <BookOpen size={48} style={{ color: 'var(--text-muted)', marginBottom: '1rem' }} />
-        <h2>Article Not Found</h2>
+        <h2>{language === 'EN' ? 'Article Not Found' : 'Artikel Tidak Ditemukan'}</h2>
         <p style={{ color: 'var(--text-secondary)', margin: '0.5rem 0 1.5rem' }}>
-          Please return to the blog articles list.
+          {language === 'EN' ? 'This article is not available or has been taken down.' : 'Artikel ini tidak tersedia atau telah dinonaktifkan.'}
         </p>
         <button onClick={() => navigateTo('blog')} className="btn btn-primary">
           <ArrowLeft size={16} /> {t('btnBackToArticles')}
@@ -31,7 +31,7 @@ const ArticleDetailPage = () => {
 
   // Related articles in same category or recent
   const relatedArticles = articles
-    .filter(a => a.id !== item.id)
+    .filter(a => a.id !== item.id && !a.hidden)
     .slice(0, 2);
 
   const handleShare = async () => {

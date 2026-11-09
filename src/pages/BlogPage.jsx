@@ -9,15 +9,17 @@ const BlogPage = () => {
   const [selectedCategory, setSelectedCategory] = useState('Semua');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Extract unique categories
+  // Extract unique categories from visible articles
   const categories = useMemo(() => {
-    const set = new Set(articles.map(a => a.category));
+    const visible = articles.filter(a => !a.hidden);
+    const set = new Set(visible.map(a => a.category));
     return ['Semua', ...Array.from(set)];
   }, [articles]);
 
   // Filter Articles
   const filteredArticles = useMemo(() => {
     return articles.filter(a => {
+      if (a.hidden) return false;
       const localized = getLocalizedArticle(a, language);
       const matchCat = selectedCategory === 'Semua' || a.category === selectedCategory;
       const matchSearch = (localized.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||

@@ -210,6 +210,7 @@ export const PortfolioProvider = ({ children }) => {
     addProject:body=>mutateList('projects','POST',null,body),updateProject:(id,body)=>mutateList('projects','PUT',id,body),deleteProject:id=>mutateList('projects','DELETE',id),
     toggleProjectFeatured:id=>{const item=data.projects.find(p=>p.id===id);return item&&mutateList('projects','PUT',id,{featured:!item.featured});},
     addArticle:body=>mutateList('articles','POST',null,body),updateArticle:(id,body)=>mutateList('articles','PUT',id,body),deleteArticle:id=>mutateList('articles','DELETE',id),
+    toggleArticleHidden:id=>{const item=data.articles.find(a=>a.id===id);return item&&mutateList('articles','PUT',id,{hidden:!item.hidden});},
     addExperience:body=>mutateList('experiences','POST',null,body),updateExperience:(id,body)=>mutateList('experiences','PUT',id,body),deleteExperience:id=>mutateList('experiences','DELETE',id),
     addSkill:body=>mutateList('skills','POST',null,body),updateSkill:(id,body)=>mutateList('skills','PUT',id,body),deleteSkill:id=>mutateList('skills','DELETE',id),
     updateProfile:body=>updateObject('profile',body),updateSettings:body=>updateObject('settings',body),updateCvData:body=>updateObject('cv',body),
