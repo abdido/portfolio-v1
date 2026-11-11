@@ -8,6 +8,7 @@ const ProjectsTab = () => {
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
+  const [langTab, setLangTab] = useState('id'); // 'id' | 'en'
 
   // Extract unique categories dynamically from current projects list
   const existingCategories = useMemo(() => {
@@ -39,6 +40,7 @@ const ProjectsTab = () => {
 
   const handleOpenAdd = () => {
     setEditingProject(null);
+    setLangTab('id');
     setIsCustomCategory(false);
     setCustomCategoryInput('');
     setFormData({
@@ -63,6 +65,7 @@ const ProjectsTab = () => {
 
   const handleOpenEdit = (proj) => {
     setEditingProject(proj);
+    setLangTab('id');
     const isCustom = !existingCategories.includes(proj.category);
     setIsCustomCategory(isCustom);
     setCustomCategoryInput(isCustom ? proj.category : '');
@@ -99,6 +102,18 @@ const ProjectsTab = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!formData.title || !formData.title.trim()) {
+      setLangTab('id');
+      alert("Silakan masukkan Judul Proyek (Bahasa Indonesia)!");
+      return;
+    }
+
+    if (!formData.summary || !formData.summary.trim()) {
+      setLangTab('id');
+      alert("Silakan masukkan Ringkasan Singkat (Bahasa Indonesia)!");
+      return;
+    }
 
     const finalCategory = isCustomCategory ? customCategoryInput.trim() : formData.category;
 
@@ -279,202 +294,325 @@ const ProjectsTab = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="modal-body">
-              <div className="form-group">
-                <label className="form-label">Judul Proyek (Bahasa Indonesia) *</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Contoh: NusaCloud Management Dashboard"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  required
-                />
+              {/* Language Switcher Tabs */}
+              <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '1.25rem', paddingBottom: '0.85rem', borderBottom: '1px solid var(--border-color)' }}>
+                <button
+                  type="button"
+                  onClick={() => setLangTab('id')}
+                  className={`btn ${langTab === 'id' ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{
+                    flex: 1,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.55rem',
+                    padding: '0.65rem 1rem',
+                    borderRadius: 'var(--radius-md)',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>🇮🇩</span>
+                  <span>Bahasa Indonesia</span>
+                  <span style={{
+                    fontSize: '0.72rem',
+                    padding: '0.15rem 0.5rem',
+                    borderRadius: 'var(--radius-full)',
+                    background: langTab === 'id' ? 'rgba(255,255,255,0.22)' : 'var(--bg-secondary)',
+                    color: langTab === 'id' ? '#fff' : 'var(--text-muted)',
+                    fontWeight: 600
+                  }}>
+                    Utama
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setLangTab('en')}
+                  className={`btn ${langTab === 'en' ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{
+                    flex: 1,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.55rem',
+                    padding: '0.65rem 1rem',
+                    borderRadius: 'var(--radius-md)',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>🇬🇧</span>
+                  <span>English Version</span>
+                  <span style={{
+                    fontSize: '0.72rem',
+                    padding: '0.15rem 0.5rem',
+                    borderRadius: 'var(--radius-full)',
+                    background: (formData.titleEn && formData.summaryEn)
+                      ? (langTab === 'en' ? 'rgba(255,255,255,0.25)' : 'rgba(16, 185, 129, 0.15)')
+                      : (langTab === 'en' ? 'rgba(255,255,255,0.2)' : 'var(--bg-secondary)'),
+                    color: (formData.titleEn && formData.summaryEn)
+                      ? (langTab === 'en' ? '#fff' : 'var(--success-color)')
+                      : (langTab === 'en' ? '#fff' : 'var(--text-muted)'),
+                    fontWeight: 600
+                  }}>
+                    {formData.titleEn && formData.summaryEn ? '✓ Terisi' : 'Opsional'}
+                  </span>
+                </button>
               </div>
 
-              <div className="form-group">
-                <label className="form-label" style={{ color: 'var(--accent-color)' }}>Project Title (English Version)</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="e.g. NusaCloud Management Platform"
-                  value={formData.titleEn}
-                  onChange={(e) => setFormData({ ...formData, titleEn: e.target.value })}
-                />
-              </div>
+              {/* TAB 1: BAHASA INDONESIA */}
+              {langTab === 'id' && (
+                <div style={{ animation: 'fadeIn 0.2s ease' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                    <Globe size={15} className="text-accent" />
+                    <span>Konten Proyek dalam <strong>Bahasa Indonesia</strong> (Bahasa Utama / Default website)</span>
+                  </div>
 
-              <div className="form-grid-2">
-                <div className="form-group">
-                  <label className="form-label">Kategori Proyek *</label>
-                  <select
-                    className="form-control"
-                    value={isCustomCategory ? '__NEW_CATEGORY__' : formData.category}
-                    onChange={handleCategorySelectChange}
-                  >
-                    {existingCategories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                    <option value="__NEW_CATEGORY__">+ Tambah Kategori Baru...</option>
-                  </select>
-
-                  {isCustomCategory && (
+                  <div className="form-group">
+                    <label className="form-label">Judul Proyek (Bahasa Indonesia) *</label>
                     <input
                       type="text"
                       className="form-control"
-                      style={{ marginTop: '0.5rem' }}
-                      placeholder="Ketik nama kategori baru..."
-                      value={customCategoryInput}
-                      onChange={(e) => setCustomCategoryInput(e.target.value)}
+                      placeholder="Contoh: NusaCloud - Platform SaaS Management & Analytics"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                       required
                     />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Ringkasan Singkat (Indonesian Summary) *</label>
+                    <textarea
+                      rows="2"
+                      className="form-control"
+                      placeholder="Ringkasan 1-2 kalimat..."
+                      value={formData.summary}
+                      onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
+                      required
+                    ></textarea>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Deskripsi Lengkap Proyek (Bahasa Indonesia)</label>
+                    <textarea
+                      rows="4"
+                      className="form-control"
+                      placeholder="Rincian latar belakang, fitur, arsitektur, dan teknologi proyek..."
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    ></textarea>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: ENGLISH VERSION */}
+              {langTab === 'en' && (
+                <div style={{ animation: 'fadeIn 0.2s ease' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                      <Globe size={15} style={{ color: '#38bdf8' }} />
+                      <span>Project Content in <strong>English</strong> (Tampil saat pengunjung memilih mode EN)</span>
+                    </div>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                      *Kosongkan jika ingin menggunakan konten Bahasa Indonesia (fallback).
+                    </span>
+                  </div>
+
+                  {/* Indonesian Reference Helper Box for Admin */}
+                  {(formData.title || formData.summary) && (
+                    <div style={{ marginBottom: '1.15rem', padding: '0.85rem 1rem', background: 'rgba(56, 189, 248, 0.05)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(56, 189, 248, 0.2)', fontSize: '0.85rem' }}>
+                      <div style={{ fontWeight: 700, color: 'var(--accent-color)', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span>🇮🇩 Referensi Teks Bahasa Indonesia:</span>
+                      </div>
+                      {formData.title && (
+                        <div style={{ marginBottom: '0.35rem' }}>
+                          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Judul ID:</span>{' '}
+                          <span style={{ color: 'var(--text-primary)' }}>{formData.title}</span>
+                        </div>
+                      )}
+                      {formData.summary && (
+                        <div>
+                          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Ringkasan ID:</span>{' '}
+                          <span style={{ color: 'var(--text-secondary)' }}>{formData.summary}</span>
+                        </div>
+                      )}
+                    </div>
                   )}
+
+                  <div className="form-group">
+                    <label className="form-label" style={{ color: '#38bdf8' }}>Project Title (English Version)</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="e.g. NusaCloud - SaaS Infrastructure & Analytics Platform"
+                      value={formData.titleEn}
+                      onChange={(e) => setFormData({ ...formData, titleEn: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label" style={{ color: '#38bdf8' }}>English Summary</label>
+                    <textarea
+                      rows="2"
+                      className="form-control"
+                      placeholder="1-2 sentences summary in English..."
+                      value={formData.summaryEn}
+                      onChange={(e) => setFormData({ ...formData, summaryEn: e.target.value })}
+                    ></textarea>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label" style={{ color: '#38bdf8' }}>English Full Description</label>
+                    <textarea
+                      rows="4"
+                      className="form-control"
+                      placeholder="Detailed project background, architecture, and technology in English..."
+                      value={formData.descriptionEn}
+                      onChange={(e) => setFormData({ ...formData, descriptionEn: e.target.value })}
+                    ></textarea>
+                  </div>
+                </div>
+              )}
+
+              {/* SHARED / GENERAL PROJECT SETTINGS */}
+              <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border-color)' }}>
+                <div style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.45rem', color: 'var(--text-secondary)' }}>
+                  <FolderGit2 size={16} />
+                  <span>Pengaturan & Rincian Umum Proyek (Berlaku untuk ID & EN)</span>
+                </div>
+
+                <div className="form-grid-2">
+                  <div className="form-group">
+                    <label className="form-label">Kategori Proyek *</label>
+                    <select
+                      className="form-control"
+                      value={isCustomCategory ? '__NEW_CATEGORY__' : formData.category}
+                      onChange={handleCategorySelectChange}
+                    >
+                      {existingCategories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                      <option value="__NEW_CATEGORY__">+ Tambah Kategori Baru...</option>
+                    </select>
+
+                    {isCustomCategory && (
+                      <input
+                        type="text"
+                        className="form-control"
+                        style={{ marginTop: '0.5rem' }}
+                        placeholder="Ketik nama kategori baru..."
+                        value={customCategoryInput}
+                        onChange={(e) => setCustomCategoryInput(e.target.value)}
+                        required
+                      />
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Tahun Pengerjaan</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="2026"
+                      value={formData.year}
+                      onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+                    />
+                  </div>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Tahun Pengerjaan</label>
+                  <label className="form-label">Nama Klien / Perusahaan</label>
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="2026"
-                    value={formData.year}
-                    onChange={(e) => setFormData({ ...formData, year: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Nama Klien / Perusahaan</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="PT Nusa Digital"
-                  value={formData.client}
-                  onChange={(e) => setFormData({ ...formData, client: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">URL Gambar Sampul (Image URL)</label>
-                <input
-                  type="url"
-                  className="form-control"
-                  placeholder="https://images.unsplash.com/..."
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Ringkasan Singkat (Indonesian Summary) *</label>
-                <textarea
-                  rows="2"
-                  className="form-control"
-                  placeholder="Ringkasan 1-2 kalimat..."
-                  value={formData.summary}
-                  onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-                  required
-                ></textarea>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label" style={{ color: 'var(--accent-color)' }}>English Summary</label>
-                <textarea
-                  rows="2"
-                  className="form-control"
-                  placeholder="1-2 sentences summary in English..."
-                  value={formData.summaryEn}
-                  onChange={(e) => setFormData({ ...formData, summaryEn: e.target.value })}
-                ></textarea>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Deskripsi Lengkap Proyek (Bahasa Indonesia)</label>
-                <textarea
-                  rows="3"
-                  className="form-control"
-                  placeholder="Rincian latar belakang dan arsitektur proyek..."
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                ></textarea>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label" style={{ color: 'var(--accent-color)' }}>English Full Description</label>
-                <textarea
-                  rows="3"
-                  className="form-control"
-                  placeholder="Detailed project background and architecture in English..."
-                  value={formData.descriptionEn}
-                  onChange={(e) => setFormData({ ...formData, descriptionEn: e.target.value })}
-                ></textarea>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Teknologi / Tags (pisahkan dengan koma)</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="React, Node.js, PostgreSQL"
-                  value={formData.tags}
-                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                />
-              </div>
-
-              <div className="form-grid-2">
-                <div className="form-group">
-                  <label className="form-label">Live Demo URL</label>
-                  <input
-                    type="url"
-                    className="form-control"
-                    placeholder="https://demo.example.com"
-                    value={formData.liveUrl}
-                    onChange={(e) => setFormData({ ...formData, liveUrl: e.target.value })}
+                    placeholder="PT Nusa Digital"
+                    value={formData.client}
+                    onChange={(e) => setFormData({ ...formData, client: e.target.value })}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">GitHub Repository URL</label>
+                  <label className="form-label">URL Gambar Sampul (Image URL)</label>
                   <input
                     type="url"
                     className="form-control"
-                    placeholder="https://github.com/username/repo"
-                    value={formData.githubUrl}
-                    onChange={(e) => setFormData({ ...formData, githubUrl: e.target.value })}
+                    placeholder="https://images.unsplash.com/..."
+                    value={formData.image}
+                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
                   />
                 </div>
-              </div>
 
-              <div className="form-group">
-                <label className="checkbox-label">
+                <div className="form-group">
+                  <label className="form-label">Teknologi / Tags (pisahkan dengan koma)</label>
                   <input
-                    type="checkbox"
-                    checked={formData.featured}
-                    onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
+                    type="text"
+                    className="form-control"
+                    placeholder="React, Node.js, PostgreSQL"
+                    value={formData.tags}
+                    onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
                   />
-                  <span>Tampilkan sebagai Proyek Unggulan di Beranda Utama</span>
-                </label>
-              </div>
+                </div>
 
-              {/* Takedown / Hide Project Toggle */}
-              <div className="form-group" style={{ marginTop: '1rem', padding: '0.9rem 1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-                <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', userSelect: 'none' }}>
-                  <input
-                    type="checkbox"
-                    checked={formData.hidden}
-                    onChange={(e) => setFormData({ ...formData, hidden: e.target.checked })}
-                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--warning-color)' }}
-                  />
-                  <div>
-                    <strong style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: formData.hidden ? 'var(--warning-color)' : 'var(--text-primary)' }}>
-                      {formData.hidden ? <EyeOff size={15} /> : <Eye size={15} />}
-                      Sembunyikan proyek ini (Takedown / Draft)
-                    </strong>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                      {formData.hidden
-                        ? 'Proyek ini tidak akan tampil di website publik dan hanya dapat diakses oleh admin di CMS.'
-                        : 'Proyek aktif tayang dan dapat dilihat oleh seluruh pengunjung website publik.'}
-                    </div>
+                <div className="form-grid-2">
+                  <div className="form-group">
+                    <label className="form-label">Live Demo URL</label>
+                    <input
+                      type="url"
+                      className="form-control"
+                      placeholder="https://demo.example.com"
+                      value={formData.liveUrl}
+                      onChange={(e) => setFormData({ ...formData, liveUrl: e.target.value })}
+                    />
                   </div>
-                </label>
+
+                  <div className="form-group">
+                    <label className="form-label">GitHub Repository URL</label>
+                    <input
+                      type="url"
+                      className="form-control"
+                      placeholder="https://github.com/username/repo"
+                      value={formData.githubUrl}
+                      onChange={(e) => setFormData({ ...formData, githubUrl: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={formData.featured}
+                      onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
+                    />
+                    <span>Tampilkan sebagai Proyek Unggulan di Beranda Utama</span>
+                  </label>
+                </div>
+
+                {/* Takedown / Hide Project Toggle */}
+                <div className="form-group" style={{ marginTop: '0.75rem', padding: '0.9rem 1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                  <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', userSelect: 'none' }}>
+                    <input
+                      type="checkbox"
+                      checked={formData.hidden}
+                      onChange={(e) => setFormData({ ...formData, hidden: e.target.checked })}
+                      style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--warning-color)' }}
+                    />
+                    <div>
+                      <strong style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: formData.hidden ? 'var(--warning-color)' : 'var(--text-primary)' }}>
+                        {formData.hidden ? <EyeOff size={15} /> : <Eye size={15} />}
+                        Sembunyikan proyek ini (Takedown / Draft)
+                      </strong>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        {formData.hidden
+                          ? 'Proyek ini tidak akan tampil di website publik dan hanya dapat diakses oleh admin di CMS.'
+                          : 'Proyek aktif tayang dan dapat dilihat oleh seluruh pengunjung website publik.'}
+                      </div>
+                    </div>
+                  </label>
+                </div>
               </div>
 
               <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
