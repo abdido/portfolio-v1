@@ -194,10 +194,45 @@ const BlogTab = () => {
                     </button>
                   </td>
                   <td>
-                    <span className="badge" style={{ background: art.titleEn ? 'rgba(16, 185, 129, 0.15)' : 'var(--bg-secondary)', color: art.titleEn ? 'var(--success-color)' : 'var(--text-muted)', border: 'none' }}>
-                      <Globe size={12} style={{ marginRight: '4px' }} />
-                      {art.titleEn ? 'ID + EN Ready' : 'ID Only'}
-                    </span>
+                    {(() => {
+                      const hasTitle = Boolean(art.titleEn && art.titleEn.trim());
+                      const hasContent = Boolean(art.contentEn && art.contentEn.trim());
+
+                      let label = 'ID Only';
+                      let color = 'var(--text-muted)';
+                      let bg = 'var(--bg-secondary)';
+                      let tooltip = 'Hanya Bahasa Indonesia (pengunjung mode EN akan menggunakan teks ID)';
+
+                      if (hasTitle && hasContent) {
+                        label = 'ID + EN Ready';
+                        color = 'var(--success-color)';
+                        bg = 'rgba(16, 185, 129, 0.15)';
+                        tooltip = 'Judul dan isi artikel Bahasa Inggris sudah lengkap';
+                      } else if (hasTitle || hasContent) {
+                        label = 'EN Sebagian';
+                        color = 'var(--warning-color)';
+                        bg = 'rgba(245, 158, 11, 0.15)';
+                        tooltip = hasTitle
+                          ? 'Judul EN terisi, namun isi konten EN masih kosong'
+                          : 'Isi konten EN terisi, namun judul EN masih kosong';
+                      }
+
+                      return (
+                        <span
+                          className="badge"
+                          style={{
+                            background: bg,
+                            color: color,
+                            border: 'none',
+                            cursor: 'help'
+                          }}
+                          title={tooltip}
+                        >
+                          <Globe size={12} style={{ marginRight: '4px' }} />
+                          {label}
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td style={{ fontSize: '0.85rem' }}>{art.date}</td>
                   <td>
