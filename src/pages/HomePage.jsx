@@ -6,7 +6,7 @@ import ProjectCard from '../components/ProjectCard';
 const HomePage = () => {
   const { profile, projects, navigateTo, t, language } = usePortfolio();
 
-  const featuredProjects = projects.filter(p => p.featured).slice(0, 3);
+  const featuredProjects = projects.filter(p => p.featured && !p.hidden).slice(0, 3);
 
   return (
     <div className="page-wrapper container">

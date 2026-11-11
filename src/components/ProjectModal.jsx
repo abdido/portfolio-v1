@@ -9,7 +9,7 @@ const ProjectModal = () => {
 
   const item = getLocalizedProject(selectedProject, language);
 
-  if (!item) return null;
+  if (!item || selectedProject?.hidden) return null;
 
   return (
     <div className="modal-overlay" onClick={() => setSelectedProject(null)}>

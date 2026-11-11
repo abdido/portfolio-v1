@@ -11,15 +11,17 @@ const ProjectsPage = () => {
   const [sortBy, setSortBy] = useState('newest'); // 'newest' | 'featured'
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'horizontal'
 
-  // Extract unique categories
+  // Extract unique categories from visible projects
   const categories = useMemo(() => {
-    const set = new Set(projects.map(p => p.category));
+    const visible = projects.filter(p => !p.hidden);
+    const set = new Set(visible.map(p => p.category));
     return ['Semua', ...Array.from(set)];
   }, [projects]);
 
   // Filter & Sort Projects
   const filteredProjects = useMemo(() => {
     return projects.filter(p => {
+      if (p.hidden) return false;
       const localized = getLocalizedProject(p, language);
       const matchCat = selectedCategory === 'Semua' || p.category === selectedCategory;
       const matchSearch = (localized.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||

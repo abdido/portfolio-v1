@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Edit2, Trash2, Star, Search, X, FolderGit2, Globe } from 'lucide-react';
+import { Plus, Edit2, Trash2, Star, Search, X, FolderGit2, Globe, Eye, EyeOff } from 'lucide-react';
 import { usePortfolio } from '../context/usePortfolio';
 
 const ProjectsTab = () => {
-  const { projects, addProject, updateProject, deleteProject, toggleProjectFeatured } = usePortfolio();
+  const { projects, addProject, updateProject, deleteProject, toggleProjectFeatured, toggleProjectHidden } = usePortfolio();
 
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -33,7 +33,8 @@ const ProjectsTab = () => {
     githubUrl: '',
     client: '',
     year: '2026',
-    featured: false
+    featured: false,
+    hidden: false
   });
 
   const handleOpenAdd = () => {
@@ -54,7 +55,8 @@ const ProjectsTab = () => {
       githubUrl: 'https://github.com',
       client: 'Klien Baru',
       year: '2026',
-      featured: false
+      featured: false,
+      hidden: false
     });
     setModalOpen(true);
   };
@@ -78,7 +80,8 @@ const ProjectsTab = () => {
       githubUrl: proj.githubUrl || '',
       client: proj.client || '',
       year: proj.year || '2026',
-      featured: proj.featured || false
+      featured: proj.featured || false,
+      hidden: Boolean(proj.hidden)
     });
     setModalOpen(true);
   };
@@ -166,6 +169,7 @@ const ProjectsTab = () => {
               <th>Preview</th>
               <th>Judul Proyek</th>
               <th>Kategori</th>
+              <th>Status Publikasi</th>
               <th>Dual-Lang</th>
               <th>Unggulan</th>
               <th>Aksi</th>
@@ -174,7 +178,7 @@ const ProjectsTab = () => {
           <tbody>
             {filtered.length > 0 ? (
               filtered.map(p => (
-                <tr key={p.id}>
+                <tr key={p.id} style={{ opacity: p.hidden ? 0.78 : 1, transition: 'opacity 0.2s ease' }}>
                   <td>
                     <img
                       src={p.image}
@@ -189,6 +193,29 @@ const ProjectsTab = () => {
                     </div>
                   </td>
                   <td><span className="badge">{p.category}</span></td>
+                  <td>
+                    <button
+                      type="button"
+                      onClick={() => toggleProjectHidden(p.id)}
+                      className="badge"
+                      style={{
+                        cursor: 'pointer',
+                        background: p.hidden ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                        color: p.hidden ? 'var(--warning-color)' : 'var(--success-color)',
+                        border: p.hidden ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(16, 185, 129, 0.3)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        padding: '0.25rem 0.65rem',
+                        fontWeight: 600,
+                        transition: 'all 0.2s ease'
+                      }}
+                      title={p.hidden ? 'Proyek sedang disembunyikan. Klik untuk publikasikan kembali.' : 'Proyek aktif tayang. Klik untuk sembunyikan (takedown).'}
+                    >
+                      {p.hidden ? <EyeOff size={12} /> : <Eye size={12} />}
+                      <span>{p.hidden ? 'Disembunyikan' : 'Tayang'}</span>
+                    </button>
+                  </td>
                   <td>
                     <span className="badge" style={{ background: p.titleEn ? 'rgba(16, 185, 129, 0.15)' : 'var(--bg-secondary)', color: p.titleEn ? 'var(--success-color)' : 'var(--text-muted)', border: 'none' }}>
                       <Globe size={12} style={{ marginRight: '4px' }} />
@@ -208,6 +235,14 @@ const ProjectsTab = () => {
                   </td>
                   <td>
                     <div className="table-actions">
+                      <button
+                        type="button"
+                        onClick={() => toggleProjectHidden(p.id)}
+                        className={`btn-icon ${p.hidden ? 'btn-warning' : 'btn-secondary'}`}
+                        title={p.hidden ? 'Tampilkan Kembali Proyek' : 'Sembunyikan / Takedown Proyek'}
+                      >
+                        {p.hidden ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
                       <button onClick={() => handleOpenEdit(p)} className="btn-icon btn-secondary" title="Edit Proyek">
                         <Edit2 size={16} />
                       </button>
@@ -220,7 +255,7 @@ const ProjectsTab = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                <td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                   Tidak ada proyek ditemukan.
                 </td>
               </tr>
@@ -416,6 +451,29 @@ const ProjectsTab = () => {
                     onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
                   />
                   <span>Tampilkan sebagai Proyek Unggulan di Beranda Utama</span>
+                </label>
+              </div>
+
+              {/* Takedown / Hide Project Toggle */}
+              <div className="form-group" style={{ marginTop: '1rem', padding: '0.9rem 1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', userSelect: 'none' }}>
+                  <input
+                    type="checkbox"
+                    checked={formData.hidden}
+                    onChange={(e) => setFormData({ ...formData, hidden: e.target.checked })}
+                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--warning-color)' }}
+                  />
+                  <div>
+                    <strong style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: formData.hidden ? 'var(--warning-color)' : 'var(--text-primary)' }}>
+                      {formData.hidden ? <EyeOff size={15} /> : <Eye size={15} />}
+                      Sembunyikan proyek ini (Takedown / Draft)
+                    </strong>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      {formData.hidden
+                        ? 'Proyek ini tidak akan tampil di website publik dan hanya dapat diakses oleh admin di CMS.'
+                        : 'Proyek aktif tayang dan dapat dilihat oleh seluruh pengunjung website publik.'}
+                    </div>
+                  </div>
                 </label>
               </div>
 

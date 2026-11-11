@@ -31,7 +31,7 @@ export const schemas = {
   projects: z.object({ title: text.min(1), titleEn: optional, category: text.min(1), categoryEn: optional,
     summary: long.default(''), summaryEn: long.default(''), description: long.default(''), descriptionEn: long.default(''),
     image: url, liveUrl: url, githubUrl: url, tags: list, features: list, featuresEn: list,
-    client: optional, year: optional, featured: z.boolean().default(false) }),
+    client: optional, year: optional, featured: z.boolean().default(false), hidden: z.boolean().default(false) }),
   articles: z.object({ title: text.min(1), titleEn: optional, category: text.min(1), categoryEn: optional,
     excerpt: long.default(''), excerptEn: long.default(''), content: long.default(''), contentEn: long.default(''),
     tags: list, readTime: optional, date: optional, hidden: z.boolean().default(false) }),
