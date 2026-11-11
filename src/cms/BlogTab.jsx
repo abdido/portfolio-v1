@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { Plus, Edit2, Trash2, Search, X, FileText, Globe, Eye, EyeOff } from 'lucide-react';
 import { usePortfolio } from '../context/usePortfolio';
+import { renderRichContent } from '../utils/richText';
 
 const BlogTab = () => {
   const { articles, addArticle, updateArticle, deleteArticle, toggleArticleHidden } = usePortfolio();
@@ -8,6 +9,34 @@ const BlogTab = () => {
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingArticle, setEditingArticle] = useState(null);
+
+  const contentIdRef = useRef(null);
+  const contentEnRef = useRef(null);
+  const [previewId, setPreviewId] = useState(false);
+  const [previewEn, setPreviewEn] = useState(false);
+
+  const insertTag = (fieldName, textareaRef, openTag, closeTag = '', placeholder = '') => {
+    const el = textareaRef.current;
+    if (!el) {
+      setFormData(prev => ({ ...prev, [fieldName]: (prev[fieldName] || '') + openTag + placeholder + closeTag }));
+      return;
+    }
+
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const currentVal = formData[fieldName] || '';
+    const selectedText = currentVal.substring(start, end);
+    const insertText = selectedText ? `${openTag}${selectedText}${closeTag}` : `${openTag}${placeholder}${closeTag}`;
+
+    const newVal = currentVal.substring(0, start) + insertText + currentVal.substring(end);
+    setFormData(prev => ({ ...prev, [fieldName]: newVal }));
+
+    setTimeout(() => {
+      el.focus();
+      const newCursorPos = selectedText ? start + insertText.length : start + openTag.length + placeholder.length;
+      el.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
+  };
 
   // Extract unique categories dynamically from current articles list
   const existingCategories = useMemo(() => {
@@ -36,6 +65,8 @@ const BlogTab = () => {
     setEditingArticle(null);
     setIsCustomCategory(false);
     setCustomCategoryInput('');
+    setPreviewId(false);
+    setPreviewEn(false);
     setFormData({
       title: '',
       titleEn: '',
@@ -56,6 +87,8 @@ const BlogTab = () => {
     const isCustom = !existingCategories.includes(art.category);
     setIsCustomCategory(isCustom);
     setCustomCategoryInput(isCustom ? art.category : '');
+    setPreviewId(false);
+    setPreviewEn(false);
     setFormData({
       title: art.title || '',
       titleEn: art.titleEn || '',
@@ -367,26 +400,126 @@ const BlogTab = () => {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Isi Artikel Lengkap (Bahasa Indonesia) *</label>
-                <textarea
-                  rows="6"
-                  className="form-control"
-                  placeholder="Tulis seluruh pembahasan artikel Bahasa Indonesia..."
-                  value={formData.content}
-                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  required
-                ></textarea>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <label className="form-label" style={{ marginBottom: 0 }}>Isi Artikel Lengkap (Bahasa Indonesia) *</label>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewId(p => !p)}
+                    className="btn-tag-preview"
+                  >
+                    {previewId ? '✏️ Kembali Menulis' : '👁️ Pratinjau Tampilan'}
+                  </button>
+                </div>
+
+                {/* HTML Quick Tag Toolbar */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap', marginBottom: '0.5rem', padding: '0.35rem 0.5rem', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginRight: '0.2rem' }}>
+                    Tag HTML:
+                  </span>
+                  <button type="button" onClick={() => insertTag('content', contentIdRef, '<h3>', '</h3>\n', 'Subjudul')} className="btn-tag" title="Subjudul H3">
+                    &lt;h3&gt;
+                  </button>
+                  <button type="button" onClick={() => insertTag('content', contentIdRef, '<p>', '</p>\n', 'Teks paragraf...')} className="btn-tag" title="Paragraf">
+                    &lt;p&gt;
+                  </button>
+                  <button type="button" onClick={() => insertTag('content', contentIdRef, '<strong>', '</strong>', 'teks tebal')} className="btn-tag" title="Teks Tebal (Bold)">
+                    &lt;strong&gt;
+                  </button>
+                  <button type="button" onClick={() => insertTag('content', contentIdRef, '<em>', '</em>', 'teks miring')} className="btn-tag" title="Teks Miring (Italic)">
+                    &lt;em&gt;
+                  </button>
+                  <button type="button" onClick={() => insertTag('content', contentIdRef, '<ul>\n  <li>', '</li>\n  <li>Poin berikutnya</li>\n</ul>\n', 'Poin 1')} className="btn-tag" title="Daftar Poin">
+                    &lt;ul&gt; &lt;li&gt;
+                  </button>
+                  <button type="button" onClick={() => insertTag('content', contentIdRef, '<ol>\n  <li>', '</li>\n  <li>Langkah berikutnya</li>\n</ol>\n', 'Langkah 1')} className="btn-tag" title="Daftar Nomor">
+                    &lt;ol&gt; &lt;li&gt;
+                  </button>
+                  <button type="button" onClick={() => insertTag('content', contentIdRef, '<blockquote>', '</blockquote>\n', 'Catatan penting atau kutipan...')} className="btn-tag" title="Kutipan">
+                    &lt;quote&gt;
+                  </button>
+                  <button type="button" onClick={() => insertTag('content', contentIdRef, '<code>', '</code>', 'kode')} className="btn-tag" title="Kode Inline">
+                    &lt;code&gt;
+                  </button>
+                </div>
+
+                {previewId ? (
+                  <div
+                    className="article-preview-box article-content-body"
+                    dangerouslySetInnerHTML={{ __html: renderRichContent(formData.content) || '<p style="color:var(--text-muted);font-style:italic;">Belum ada konten untuk dipratinjau.</p>' }}
+                  />
+                ) : (
+                  <textarea
+                    ref={contentIdRef}
+                    rows="8"
+                    className="form-control"
+                    placeholder="Tulis pembahasan artikel. Anda dapat menggunakan tag HTML seperti <h3>, <p>, <strong>, <ul>, <li>, dll..."
+                    value={formData.content}
+                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                    required
+                    style={{ lineHeight: 1.6, minHeight: '160px' }}
+                  ></textarea>
+                )}
               </div>
 
               <div className="form-group">
-                <label className="form-label" style={{ color: 'var(--accent-color)' }}>Full Article Content (English Version)</label>
-                <textarea
-                  rows="6"
-                  className="form-control"
-                  placeholder="Write complete English article body content here..."
-                  value={formData.contentEn}
-                  onChange={(e) => setFormData({ ...formData, contentEn: e.target.value })}
-                ></textarea>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <label className="form-label" style={{ marginBottom: 0, color: 'var(--accent-color)' }}>Full Article Content (English Version)</label>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewEn(p => !p)}
+                    className="btn-tag-preview"
+                  >
+                    {previewEn ? '✏️ Back to Edit' : '👁️ Preview HTML'}
+                  </button>
+                </div>
+
+                {/* HTML Quick Tag Toolbar EN */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap', marginBottom: '0.5rem', padding: '0.35rem 0.5rem', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginRight: '0.2rem' }}>
+                    Quick Tags:
+                  </span>
+                  <button type="button" onClick={() => insertTag('contentEn', contentEnRef, '<h3>', '</h3>\n', 'Heading')} className="btn-tag" title="Heading H3">
+                    &lt;h3&gt;
+                  </button>
+                  <button type="button" onClick={() => insertTag('contentEn', contentEnRef, '<p>', '</p>\n', 'Paragraph text...')} className="btn-tag" title="Paragraph">
+                    &lt;p&gt;
+                  </button>
+                  <button type="button" onClick={() => insertTag('contentEn', contentEnRef, '<strong>', '</strong>', 'bold text')} className="btn-tag" title="Bold">
+                    &lt;strong&gt;
+                  </button>
+                  <button type="button" onClick={() => insertTag('contentEn', contentEnRef, '<em>', '</em>', 'italic text')} className="btn-tag" title="Italic">
+                    &lt;em&gt;
+                  </button>
+                  <button type="button" onClick={() => insertTag('contentEn', contentEnRef, '<ul>\n  <li>', '</li>\n  <li>Next point</li>\n</ul>\n', 'Point 1')} className="btn-tag" title="Bullet List">
+                    &lt;ul&gt; &lt;li&gt;
+                  </button>
+                  <button type="button" onClick={() => insertTag('contentEn', contentEnRef, '<ol>\n  <li>', '</li>\n  <li>Next step</li>\n</ol>\n', 'Step 1')} className="btn-tag" title="Numbered List">
+                    &lt;ol&gt; &lt;li&gt;
+                  </button>
+                  <button type="button" onClick={() => insertTag('contentEn', contentEnRef, '<blockquote>', '</blockquote>\n', 'Important note or quote...')} className="btn-tag" title="Blockquote">
+                    &lt;quote&gt;
+                  </button>
+                  <button type="button" onClick={() => insertTag('contentEn', contentEnRef, '<code>', '</code>', 'code')} className="btn-tag" title="Inline Code">
+                    &lt;code&gt;
+                  </button>
+                </div>
+
+                {previewEn ? (
+                  <div
+                    className="article-preview-box article-content-body"
+                    dangerouslySetInnerHTML={{ __html: renderRichContent(formData.contentEn) || '<p style="color:var(--text-muted);font-style:italic;">No English content to preview yet.</p>' }}
+                  />
+                ) : (
+                  <textarea
+                    ref={contentEnRef}
+                    rows="8"
+                    className="form-control"
+                    placeholder="Write English article content. You can structure it using HTML tags like <h3>, <p>, <strong>, <ul>, <li>, etc..."
+                    value={formData.contentEn}
+                    onChange={(e) => setFormData({ ...formData, contentEn: e.target.value })}
+                    style={{ lineHeight: 1.6, minHeight: '160px' }}
+                  ></textarea>
+                )}
               </div>
 
               <div className="form-group">

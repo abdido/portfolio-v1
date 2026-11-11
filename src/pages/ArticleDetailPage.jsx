@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { ArrowLeft, Calendar, Clock, Share2, Tag, BookOpen } from 'lucide-react';
 import { usePortfolio } from '../context/usePortfolio';
 import { getLocalizedArticle } from '../utils/langHelper';
+import { renderRichContent } from '../utils/richText';
 import BlogCard from '../components/BlogCard';
 
 const ArticleDetailPage = () => {
@@ -100,9 +101,10 @@ const ArticleDetailPage = () => {
         </div>
 
         {/* Rich Article Body Content */}
-        <div style={{ fontSize: '1.05rem', lineHeight: 1.8, color: 'var(--text-primary)', marginBottom: '3.5rem', whiteSpace: 'pre-wrap', fontFamily: 'var(--font-main)' }}>
-          {item.content}
-        </div>
+        <div
+          className="article-content-body"
+          dangerouslySetInnerHTML={{ __html: renderRichContent(item.content) }}
+        />
 
         {/* Tags Row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)', marginBottom: '3.5rem' }}>

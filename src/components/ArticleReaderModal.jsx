@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Calendar, Clock } from 'lucide-react';
 import { usePortfolio } from '../context/usePortfolio';
+import { renderRichContent } from '../utils/richText';
 
 const ArticleReaderModal = () => {
   const { selectedArticle, setSelectedArticle } = usePortfolio();
@@ -35,9 +36,10 @@ const ArticleReaderModal = () => {
             "{selectedArticle.excerpt}"
           </div>
 
-          <div style={{ whiteSpace: 'pre-wrap', fontFamily: 'var(--font-main)', color: 'var(--text-secondary)' }}>
-            {selectedArticle.content}
-          </div>
+          <div
+            className="article-content-body"
+            dangerouslySetInnerHTML={{ __html: renderRichContent(selectedArticle.content) }}
+          />
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginTop: '2.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
             <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>Tag Terkait:</span>

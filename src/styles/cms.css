@@ -461,6 +461,55 @@
   cursor: pointer;
 }
 
+/* CMS Article HTML Tag Toolbar */
+.btn-tag {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.btn-tag:hover {
+  background: var(--accent-light);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.btn-tag-preview {
+  background: var(--accent-light);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: var(--accent-color);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.65rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.btn-tag-preview:hover {
+  background: var(--accent-color);
+  color: #ffffff;
+}
+
+.article-preview-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 1.25rem;
+  min-height: 200px;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
 /* PIN Login Box */
 .pin-login-box {
   background: var(--bg-card);
