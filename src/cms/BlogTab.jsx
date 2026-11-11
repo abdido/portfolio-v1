@@ -164,24 +164,7 @@ const BlogTab = () => {
               filtered.map(art => (
                 <tr key={art.id} style={{ opacity: art.hidden ? 0.78 : 1, transition: 'opacity 0.2s ease' }}>
                   <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <strong>{art.title}</strong>
-                      {art.hidden && (
-                        <span
-                          className="badge"
-                          style={{
-                            background: 'rgba(245, 158, 11, 0.15)',
-                            color: 'var(--warning-color)',
-                            border: '1px solid rgba(245, 158, 11, 0.3)',
-                            fontSize: '0.7rem',
-                            padding: '0.1rem 0.45rem',
-                            gap: '3px'
-                          }}
-                        >
-                          <EyeOff size={11} /> Takedown
-                        </span>
-                      )}
-                    </div>
+                    <strong>{art.title}</strong>
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
                       EN: {art.titleEn || '(Menggunakan fallback ID)'}
                     </div>
